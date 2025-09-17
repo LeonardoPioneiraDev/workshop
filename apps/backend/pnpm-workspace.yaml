@@ -1,0 +1,9 @@
+packages:
+  - frontend
+  - backend
+ignoredBuiltDependencies:
+  - '@nestjs/core'
+  - '@prisma/client'
+  - '@scarf/scarf'
+  - oracledb
+  - sqlite3

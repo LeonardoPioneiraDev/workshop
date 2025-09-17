@@ -1,0 +1,90 @@
+.
+├── .DS_Store
+├── .dockerignore
+├── .env
+├── .gitignore
+├── Dockerfile
+├── Perfeito, Leonardo. Vamos reorganiz.txt
+├── README.md
+├── assets
+│   ├── background.jpeg
+│   ├── backgroundark.png
+│   ├── logo.png
+│   └── logoempresa.png
+├── env.sh
+├── eslint.config.js
+├── estrutura.txt
+├── index.html
+├── nginx.conf
+├── package copy.json
+├── package-lock.json
+├── package.json
+├── postcss.config.cjs
+├── public
+│   ├── config.js
+│   └── vite.svg
+├── src
+│   ├── .DS_Store
+│   ├── .env
+│   ├── App.tsx
+│   ├── ErrorBoundary
+│   │   └── ErrorBoundary.tsx
+│   ├── TestComponent.tsx
+│   ├── assets
+│   │   ├── logo.png
+│   │   └── react.svg
+│   ├── charts
+│   │   └── chartConfig.ts
+│   ├── components
+│   │   ├── ChartFilters
+│   │   │   ├── ChartFilters.module.css
+│   │   │   └── ChartFilters.tsx
+│   │   ├── Debug.tsx
+│   │   ├── charts
+│   │   │   ├── BarChart.css
+│   │   │   ├── BarChartCumprimento.tsx
+│   │   │   └── teste.tsx
+│   │   ├── filters
+│   │   │   ├── FiltrosDashboard.css
+│   │   │   └── FiltrosDashboard.tsx
+│   │   ├── mode-toggle.tsx
+│   │   └── theme-provider.tsx
+│   ├── contexts
+│   │   ├── FiltrosContext.tsx
+│   │   └── useExportHook.ts
+│   ├── global.css
+│   ├── global.d.ts
+│   ├── lib
+│   ├── main.tsx
+│   ├── pages
+│   │   ├── DashboardPage.tsx
+│   │   ├── HistoricoFiltrosPage.tsx
+│   │   └── HomePage.tsx
+│   ├── routes
+│   │   └── AppRoutes.tsx
+│   ├── services
+│   │   ├── api.ts
+│   │   └── operationRules.ts
+│   ├── styles
+│   │   ├── DashboardPage.module.css
+│   │   ├── HomePage.module.css
+│   │   └── global.css
+│   ├── types
+│   │   └── cumprimento.ts
+│   ├── utils
+│   │   ├── chartOptions.ts
+│   │   ├── chartUtils.ts
+│   │   ├── exportUtils.ts
+│   │   ├── filtrosStorage.ts
+│   │   ├── setorUtils.ts
+│   │   ├── teste.tsx
+│   │   └── tipos.ts
+│   └── vite-env.d.ts
+├── tailwind.config.ts
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+├── vite-env.d.ts
+└── vite.config.ts
+
+19 directories, 69 files

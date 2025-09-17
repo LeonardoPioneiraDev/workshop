@@ -1,0 +1,45 @@
+Perfeito, Leonardo. Vamos reorganizar e aprimorar seu frontend React + Vite com uma estrutura limpa, modular e escalável, incluindo:
+
+✅ .env para variáveis de ambiente
+✅ Páginas separadas (ex: HomePage, DashboardPage)
+✅ Rotas usando react-router-dom
+✅ Filtros modulares
+✅ Gráficos como componentes isolados
+✅ Arquitetura moderna com separação clara de responsabilidades
+
+✅ ESTRUTURA PROPOSTA
+
+src/
+├── components/
+│   ├── charts/
+│   │   └── BarChartCumprimento.tsx     ← componente gráfico
+│   └── filters/
+│       └── FiltrosDashboard.tsx        ← filtros (data, linha, empresa etc.)
+│
+├── pages/
+│   ├── DashboardPage.tsx               ← tela de dashboard
+│   └── HomePage.tsx                    ← tela inicial
+│
+├── routes/
+│   └── AppRoutes.tsx                   ← configura as rotas
+│
+├── services/
+│   └── api.ts                          ← instancia do axios com env
+│
+├── types/
+│   └── cumprimento.ts                  ← tipagem dos dados
+│
+├── App.tsx                             ← ponto de entrada
+├── main.tsx                            ← render React
+└── styles/
+    └── global.css                      ← estilos globais (opcional)
+
+
+PrefixoPrevisto
+: 
+"-"
+carro que era previsto mas mudou e acabou usando o ralizado, 
+
+PrefixoRealizado
+: 
+"233153"

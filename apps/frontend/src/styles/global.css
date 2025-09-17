@@ -1,0 +1,375 @@
+/* Global Styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base Global Styles */
+body {
+  @apply bg-gray-50 text-gray-800 font-sans antialiased min-h-screen;
+}
+
+/* Container central padrão */
+.container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Seção com espaçamento vertical consistente */
+.section-spacing {
+  @apply py-6 md:py-10;
+}
+
+/* Animações personalizadas */
+@layer utilities {
+  .animate-fade-in-down {
+    @apply opacity-0 translate-y-4;
+    animation: fadeInDown 0.6s ease-out forwards;
+  }
+
+  .animate-fade-in-up {
+    @apply opacity-0 translate-y-4;
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  @keyframes fadeInDown {
+    0% {
+      opacity: 0;
+      transform: translateY(-1rem);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInUp {
+    0% {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Componentes reutilizáveis */
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 text-white font-medium px-4 py-2 rounded-md shadow-sm hover:bg-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-800 font-medium px-4 py-2 rounded-md shadow-sm hover:bg-gray-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50;
+  }
+
+  .card {
+    @apply bg-white rounded-lg shadow-md p-4 sm:p-6 transition-all duration-300 hover:shadow-lg;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-success {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+  
+  .badge-error {
+    @apply bg-red-100 text-red-800;
+  }
+}
+
+/* Header específico */
+.app-header {
+  @apply bg-gradient-to-r from-blue-800 to-indigo-900 text-white shadow-lg;
+}
+
+.app-header h1 {
+  @apply text-xl sm:text-2xl md:text-3xl font-bold;
+}
+
+/* Footer específico */
+.app-footer {
+  @apply bg-gray-800 text-white py-6;
+}
+
+.app-footer p {
+  @apply text-sm md:text-base;
+}
+
+/* Conteúdo principal */
+.app-content {
+  @apply flex-grow py-6;
+}
+
+/* Responsividade para dispositivos móveis */
+@media (max-width: 640px) {
+  .app-header h1 {
+    @apply text-xl text-center mb-2;
+  }
+  
+  .app-footer {
+    @apply text-center;
+  }
+}
+
+/* Estilos para tabelas */
+.data-table {
+  @apply w-full border-collapse;
+}
+
+.data-table th {
+  @apply bg-gray-100 text-left px-4 py-2 font-medium text-gray-700 border-b;
+}
+
+.data-table td {
+  @apply px-4 py-2 border-b border-gray-200;
+}
+
+.data-table tr:hover {
+  @apply bg-gray-50;
+}
+
+/* Estilos para painéis de estatísticas */
+.stat-card {
+  @apply bg-white rounded-lg shadow p-4 flex flex-col;
+}
+
+.stat-value {
+  @apply text-2xl font-bold text-gray-900;
+}
+
+.stat-label {
+  @apply text-sm text-gray-500;
+}
+
+/* Estilos para gráficos */
+.chart-container {
+  @apply bg-white p-4 rounded-lg shadow-md mb-6;
+}
+
+.chart-title {
+  @apply text-lg font-medium mb-4 text-gray-800;
+}
+
+/* Estilos para filtros e controles */
+.filter-bar {
+  @apply flex flex-wrap gap-3 mb-6 p-4 bg-white rounded-lg shadow-sm;
+}
+
+.filter-item {
+  @apply flex items-center;
+}
+
+.filter-label {
+  @apply text-sm font-medium text-gray-700 mr-2;
+}
+/* Adicione ao seu arquivo de estilos */
+
+/* Estilos básicos para header e footer */
+
+
+/* Container centralizado */
+.container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Estilos específicos para o header */
+header {
+  background-color: #1d4ed8; /* azul-700 */
+  color: white;
+  padding: 1rem 0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Estilos para o footer */
+footer {
+  background-color: #1f2937; /* bg-gray-800 */
+  color: #f9fafb; /* text-white */
+  padding: 1.2rem 0; /* Corrigido: havia um espaço entre 1.2 e rem */
+  width: 100%;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+footer .container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+footer p {
+  font-size: 1rem; /* Ajustado para um tamanho mais adequado (era 1.75rem) */
+  text-align: center;
+  margin: 0;
+}
+
+footer a {
+  color: #d1d5db; /* text-gray-300 */
+  text-decoration: none;
+  transition: color 0.2s ease;
+  font-size: 0.875rem;
+  padding: 0.25rem 0;
+  display: inline-block;
+}
+
+footer a:hover {
+  color: #ffffff;
+}
+
+/* Links do footer aparecem apenas em telas médias e grandes */
+footer .footer-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+/* Responsividade para diferentes tamanhos de tela */
+
+/* Telas grandes e médias */
+@media (min-width: 768px) {
+  footer {
+    padding: 1.5rem 0;
+  }
+  
+  footer .container {
+  
+    justify-content: space-between;
+  }
+  
+  footer p {
+    font-size: 1rem;
+    text-align: left;
+  }
+  
+  footer .footer-links {
+   
+    gap: 1.5rem;
+    margin-top: 0;
+  }
+}
+
+/* Telas médias */
+@media (min-width: 640px) and (max-width: 767px) {
+  footer {
+    padding: 1.2rem 0;
+  }
+  
+  footer p {
+    font-size: 0.95rem;
+  }
+  
+  footer .footer-links {
+   
+    gap: 1.25rem;
+  }
+}
+
+/* Telas pequenas (tablets pequenos, smartphones grandes) */
+@media (min-width: 481px) and (max-width: 639px) {
+  footer {
+    padding: 1rem 0;
+  }
+  
+  footer p {
+    font-size: 0.9rem;
+  }
+  
+  footer .footer-links {
+    gap: 1rem;
+  }
+  
+  footer a {
+    font-size: 0.8rem;
+  }
+}
+
+/* Smartphones */
+@media (max-width: 480px) {
+  footer {
+    padding: 0.9rem 0;
+  }
+  
+  footer .container {
+    padding: 0 0.75rem;
+  }
+  
+  footer p {
+    font-size: 0.85rem;
+  }
+  
+  footer .footer-links {
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+  
+  footer a {
+    font-size: 0.75rem;
+  }
+}
+
+/* Para telas muito pequenas */
+@media (max-width: 360px) {
+  footer {
+    padding: 0.8rem 0;
+  }
+  
+  footer p {
+    font-size: 0.75rem;
+  }
+  
+  footer .footer-links {
+    gap: 0.5rem;
+  }
+  
+  footer a {
+    font-size: 0.7rem;
+    padding: 0.2rem 0;
+  }
+}
+
+/* Para telas muito grandes */
+@media (min-width: 1280px) {
+  footer .container {
+    padding: 0 2rem;
+  }
+  
+  footer p {
+    font-size: 1.1rem;
+  }
+  
+  footer a {
+    font-size: 0.95rem;
+  }
+}
+
+/* Para telas extremamente grandes */
+@media (min-width: 1536px) {
+  
+  
+  footer .container {
+    max-width: 1400px;
+    padding: 0 2.5rem;
+  }
+}

@@ -1,0 +1,110 @@
+Dashboard/
+│
+├── apps/
+│   ├── backend/       → NestJS
+│   └── frontend/      → React + TypeScript (Vite)
+│
+├── package.json       → Gerencia os workspaces
+├── turbo.json         → Orquestra os builds/dev
+└── pnpm-workspace.yaml
+
+
+pnpm --filter frontend dev
+pnpm --filter backend start:dev
+
+
+https://its00078.itstransdata.com/ITS-InfoExport_CA06FCF3-D34E-4567-B069-153EA5085D80/api/Data/cumprimentoservico?dia=2025-05-07
+
+busca MAN_OS
+
+SELECT
+    -- Detalhes Principais da Ordem de Serviço (Tabela MAN_OS M)
+    M.NUMEROOS AS "Número OS",
+    TO_CHAR(M.DATAABERTURAOS, 'DD/MM/YYYY') AS "Data Abertura",
+    TO_CHAR(M.DATAFECHAMENTOOS, 'DD/MM/YYYY') AS "Data Fechamento",
+    M.HORAABERTURAOS AS "Hora Abertura",
+    M.KMEXECUCAOOS AS "KM Execução",
+    DECODE(M.TIPOOS, 'C', 'Corretiva', 'P', 'Preventiva', 'Outro') AS "Tipo OS",
+    DECODE(M.CONDICAOOS, 'A', 'Aberta', 'FC', 'Fechada', 'Outro') AS "Condição OS",
+    M.SERVICOINTEXTOS AS "Indicador Serviço Interno/Externo", -- Descrição do campo sugere ser um indicador
+
+    -- Informações da Origem da OS (Tabela MAN_ORIGEMOS MO)
+    M.CODORIGOS AS "Código Origem OS",
+    MO.DESCORIGOS AS "Descrição Origem OS",
+
+    -- Informações do Veículo e Garagem (Tabela FRT_CADVEICULOS V)
+    V.CODIGOGA AS "Código Garagem Veículo",
+    CASE 
+        WHEN V.CODIGOGA = 31 THEN 'PARANOÁ'
+        WHEN V.CODIGOGA = 124 THEN 'SANTA MARIA'
+        WHEN V.CODIGOGA = 239 THEN 'SÃO SEBASTIÃO'
+        WHEN V.CODIGOGA = 240 THEN 'GAMA'
+        ELSE 'GARAGEM NÃO IDENTIFICADA (' || TO_CHAR(V.CODIGOGA) || ')'
+    END AS "Nome Garagem",
+
+    -- Informações Agregadas de Quebras/Defeitos/Serviços da OS (via subconsulta DETALHES_SERVICOS_OS)
+    DETALHES_SERVICOS_OS.LISTA_CODIGOS_GRP_SERVICO AS "Códigos Grupos de Serviço",
+    DETALHES_SERVICOS_OS.LISTA_DESCRICOES_GRP_SERVICO AS "Descrições Grupos de Serviço",
+    DETALHES_SERVICOS_OS.LISTA_DESCR_COMPL_SERVICO AS "Descrições Complementares Serviços",
+    DETALHES_SERVICOS_OS.LISTA_CODIGOS_CAUSA_DEFEITO AS "Códigos Causas de Defeito",
+    -- Para exibir a descrição da causa do defeito, seria necessário um JOIN com a tabela de cadastro de causas dentro da subconsulta.
+    -- Ex: LISTAGG(DISTINCT NVL(CAD_CAUSA.DESCRICAO_CAUSA, 'N/A'), '; ') ...
+
+    -- Outros Detalhes da OS
+    M.ENDSOCOS AS "Endereço do Socorro",
+    M.CODINTFUNCSOC AS "Código Funcionário Socorro"
+    
+FROM
+    MAN_OS M
+    -- Junção para buscar informações da origem da OS
+LEFT JOIN
+    MAN_ORIGEMOS MO ON M.CODORIGOS = MO.CODORIGOS
+    -- Junção para buscar informações do veículo e garagem
+LEFT JOIN 
+    FRT_CADVEICULOS V ON M.CODIGOVEIC = V.CODIGOVEIC
+    -- Subconsulta para agregar detalhes dos serviços/defeitos realizados na OS
+LEFT JOIN (
+    SELECT
+        R_INNER.CODINTOS, -- Chave para juntar com MAN_OS
+        
+        -- Agrega os códigos dos grupos de serviço
+        LISTAGG(DISTINCT G_INNER.CODIGOGRPSERVI, ', ') WITHIN GROUP (ORDER BY G_INNER.CODIGOGRPSERVI) 
+            AS LISTA_CODIGOS_GRP_SERVICO,
+            
+        -- Agrega as descrições dos grupos de serviço
+        LISTAGG(DISTINCT NVL(G_INNER.DESCRICAOGRPSERVI, 'Grupo não informado'), '; ') WITHIN GROUP (ORDER BY NVL(G_INNER.DESCRICAOGRPSERVI, 'Grupo não informado')) 
+            AS LISTA_DESCRICOES_GRP_SERVICO,
+            
+        -- Agrega as descrições complementares dos serviços realizados
+        LISTAGG(DISTINCT NVL(R_INNER.DESCRCOMPLOSREA, 'Sem descrição complementar'), '; ') WITHIN GROUP (ORDER BY R_INNER.SEQSERVOSREAL, NVL(R_INNER.DESCRCOMPLOSREA, 'Sem descrição complementar'))
+            AS LISTA_DESCR_COMPL_SERVICO,
+
+        -- Agrega os códigos de causa de defeito
+        LISTAGG(DISTINCT R_INNER.CODIGO_CAUSADEFEITO, ', ') WITHIN GROUP (ORDER BY R_INNER.CODIGO_CAUSADEFEITO)
+            AS LISTA_CODIGOS_CAUSA_DEFEITO
+        -- Para agregar as descrições das causas, seria necessário um JOIN aqui:
+        -- LEFT JOIN MAN_CADASTRO_CAUSADEFEITO CAD_CAUSA ON R_INNER.CODIGO_CAUSADEFEITO = CAD_CAUSA.CODIGO_CAUSADEFEITO
+        -- E então usar: LISTAGG(DISTINCT NVL(CAD_CAUSA.DESCRICAO_CAUSA, 'Causa não informada'), '; ') ...
+            
+    FROM
+        MAN_OSREALIZADO R_INNER
+    LEFT JOIN 
+        MAN_GRUPODESERVICO G_INNER ON R_INNER.CODIGOGRPSERVI = G_INNER.CODIGOGRPSERVI
+    -- Se existir uma tabela de cadastro de causas de defeito, ela seria juntada aqui.
+    -- Ex: LEFT JOIN MAN_CADASTRO_CAUSADEFEITO CAD_CAUSA ON R_INNER.CODIGO_CAUSADEFEITO = CAD_CAUSA.CODIGO_CAUSADEFEITO
+    WHERE 
+        R_INNER.CODINTOS IN (
+            SELECT OS_SUB.CODINTOS 
+            FROM MAN_OS OS_SUB 
+            WHERE OS_SUB.NUMEROOS IN (726769, 726770, 726771, 726772, 726773, 726774, 726775, 726776)
+        )
+    GROUP BY
+        R_INNER.CODINTOS
+) DETALHES_SERVICOS_OS ON M.CODINTOS = DETALHES_SERVICOS_OS.CODINTOS
+
+WHERE
+    -- Filtro principal para buscar apenas as OSs com os números especificados
+    M.NUMEROOS IN (726769, 726770, 726771, 726772, 726773, 726774, 726775, 726776)
+
+ORDER BY
+    M.DATAABERTURAOS DESC, M.NUMEROOS ASC;

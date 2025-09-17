@@ -1,0 +1,430 @@
+/* Container principal da página */
+.main {
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  background: linear-gradient(135deg, #adac91, #afaa5f);
+  min-height: 98vh;
+  max-width: 100%;
+}
+
+/* Centraliza e limita o conteúdo */
+.container {
+  width: 100%;
+  padding: 0 1.5rem; /* Garante espaçamento lateral em telas pequenas */
+  margin: 0 auto;    /* Centraliza o conteúdo em telas maiores */
+  box-sizing: border-box;
+   /*max-width: 1400px;Limita a largura máxima em telas grandes */
+}
+
+/* Título do Dashboard */
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #373734;
+  text-align: center;
+}
+
+/* Descrição ou mensagens de status */
+.description {
+  color: #e7e5d5;
+  font-size: 1.125rem;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Estilo para mensagens de erro */
+.loadingMessage {
+  color: #007bff;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-top: 1rem;
+}
+
+.errorMessage {
+  color: #d9534f;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 1rem;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-top: 1rem;
+}
+
+.warningMessage {
+  color: #856404;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  padding: 1rem;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-top: 1rem;
+}
+
+.infoMessage {
+  color: #0c5460;
+  background-color: #d1ecf1;
+  border: 1px solid #bee5eb;
+  padding: 1rem;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-top: 1rem;
+}
+
+/* Container dos filtros */
+.filtersContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  border: 2px solid #cdcdcd;
+}
+
+/* Botão padrão (Voltar simples) */
+.btnVoltar {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.2rem;
+  background-color: #373734;
+  color: #faf215;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-top: 3.0rem; /* <<< AQUI está o espaçamento que "abaixa" o botão */
+}
+
+/* Botão Voltar aprimorado */
+.btnVoltar {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.2rem;
+  background-color: #373734;
+  color: #faf215;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.btnVoltar:hover {
+  background-color: #8c832a;
+  transform: translateX(-2px);
+}
+
+.btnVoltar:active {
+  transform: scale(0.98);
+}
+
+.resumoContainer {
+  background-color: #f9f9f9;
+  padding: 1.2rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border: 1px solid #ddd;
+}
+
+.subtitulo {
+  font-size: 1.2rem;
+  margin-bottom: 0.8rem;
+  color: #333;
+}
+
+.listaResumo {
+  list-style: none;
+  padding-left: 0;
+}
+
+.itemResumo {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+  font-size: 1rem;
+  color: #444;
+}
+
+/* Botão de filtro */
+.filterButton {
+  padding: 0.75rem;
+  border: none;
+  background-color: #373734;
+  color: #faf215;
+  font-size: 1rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  width: 100%;
+}
+
+.filterButton:hover {
+  background-color: #8c832a;
+}
+
+/* Container dos gráficos */
+.chartContainer {
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 2px solid #cdcdcd;
+  overflow-x: auto;
+}
+
+.successMessageDiv {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.successMessage {
+  color: #155724;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 10px;
+  padding: 12px 30px;
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: 0 2px 6px rgba(0, 128, 0, 0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.statusAtualizacao {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #222;
+  background-color: #f7f7f7;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border-left: 5px solid transparent;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  max-width: fit-content;
+  transition: border-color 0.3s ease;
+  margin-left: 35px;
+  z-index: 999;
+}
+
+.statusAtualizacao.fixo {
+  position: fixed;
+  top: 20px;
+  left: 50px;
+  margin-left: 0; /* remove o margin-left normal */
+}
+
+/* Cores de status */
+.statusAtualizacao.atualizando {
+  border-color: #007bff;
+}
+
+.statusAtualizacao.atualizado {
+  border-color: #28a745;
+}
+
+.statusAtualizacao.nao-atualizado {
+  border-color: #dc3545;
+}
+
+.bolinha {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: currentColor;
+  transition: background-color 0.3s ease;
+}
+
+.textoStatus {
+  font-size: 1.3rem;
+  line-height: 1.6;
+  font-family: sans-serif;
+  color: #495057;
+  font-weight: 500;
+}
+
+/* Responsividade para diferentes tamanhos de tela */
+
+/* Telas grandes (desktops, TVs) */
+@media (min-width: 1200px) {
+  .container {
+    padding: 0 2rem;
+  }
+  
+  .chartContainer, .filtersContainer {
+    padding: 2.5rem;
+  }
+}
+
+/* Telas médias (tablets, laptops) */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .filtersContainer {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    padding: 1.75rem;
+  }
+  
+  .chartContainer {
+    padding: 1.75rem;
+  }
+  
+  .title {
+    font-size: 2.2rem;
+  }
+}
+
+/* Telas pequenas (tablets pequenos, smartphones grandes) */
+@media (min-width: 481px) and (max-width: 767px) {
+  .main {
+    padding: 1.5rem 0.75rem;
+    gap: 1.5rem;
+  }
+  
+  .container {
+    padding: 0 1rem;
+  }
+  
+  .filtersContainer {
+    padding: 1.5rem;
+  }
+  
+  .chartContainer {
+    padding: 1.5rem;
+  }
+  
+  .title {
+    font-size: 2rem;
+  }
+  
+  .description {
+    font-size: 1rem;
+  }
+  
+  .btnVoltar {
+    font-size: 0.9rem;
+    padding: 0.6rem 1rem;
+    margin-top: 2rem;
+  }
+  
+  .statusAtualizacao {
+    margin-left: 20px;
+  }
+  
+  .statusAtualizacao.fixo {
+    left: 20px;
+  }
+  
+  .textoStatus {
+    font-size: 1.1rem;
+  }
+}
+
+/* Telas muito pequenas (smartphones) */
+@media (max-width: 480px) {
+  .main {
+    padding: 1rem 0.5rem;
+    gap: 1.25rem;
+  }
+  
+  .container {
+    padding: 0 0.75rem;
+  }
+  
+  .filtersContainer {
+    padding: 1.25rem;
+    gap: 0.75rem;
+  }
+  
+  .chartContainer {
+    padding: 1.25rem;
+  }
+  
+  .title {
+    font-size: 1.75rem;
+  }
+  
+  .description {
+    font-size: 0.9rem;
+  }
+  
+  .btnVoltar {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.9rem;
+    margin-top: 1.5rem;
+  }
+  
+  .errorMessage, .warningMessage, .infoMessage, .loadingMessage {
+    font-size: 0.9rem;
+    padding: 0.75rem;
+  }
+  
+  .subtitulo {
+    font-size: 1.1rem;
+  }
+  
+  .itemResumo {
+    font-size: 0.9rem;
+  }
+  
+  .filterButton {
+    padding: 0.6rem;
+    font-size: 0.9rem;
+  }
+  
+  .successMessage {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+  
+  .statusAtualizacao {
+    padding: 8px 12px;
+    margin-left: 10px;
+    gap: 10px;
+  }
+  
+  .statusAtualizacao.fixo {
+    top: 10px;
+    left: 10px;
+  }
+  
+  .bolinha {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .textoStatus {
+    font-size: 1rem;
+  }
+}
+
+/* Para telas muito estreitas */
+@media (max-width: 360px) {
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .filtersContainer, .chartContainer {
+    padding: 1rem;
+  }
+  
+  .textoStatus {
+    font-size: 0.9rem;
+  }
+}

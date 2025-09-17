@@ -1,0 +1,64 @@
+version: '3.8'
+services:
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: backend
+    ports:
+      - "3024:3024"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3024
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin123
+      - POSTGRES_DB=dashboard_db
+      # Outras variáveis de ambiente necessárias
+    networks:
+      - app-network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      args:
+        #- API_URL=http://10.10.100.79:3024  # Usado durante o build
+        - API_URL=http://ccoapi.vpioneira.com.br:3021  # Usado durante o build
+    container_name: frontend
+    ports:
+      - "5274:5274"
+    environment:
+      #- API_URL=http://10.10.100.79:3021  # Para acesso externo (substituído em runtime)
+      - API_URL=http://ccoapi.vpioneira.com.br:3021  # Para acesso externo (substituído em runtime)
+    networks:
+      - app-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin123
+      - POSTGRES_DB=dashboard_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

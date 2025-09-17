@@ -1,0 +1,2 @@
+apps/backend/instantclient_12_2/oraociei12.dll filter=lfs diff=lfs merge=lfs -text
+oracle-instantclient/instantclient_21_1/libociei.so filter=lfs diff=lfs merge=lfs -text

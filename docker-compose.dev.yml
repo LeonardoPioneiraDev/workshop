@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+    command: pnpm dev
+    environment:
+      - NODE_ENV=development
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+    command: pnpm start:dev
+    environment:
+      - NODE_ENV=development
