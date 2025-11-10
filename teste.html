@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Depes - Dashboard Afastados</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100vh;
+        overflow: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-color: #f2f2f2;
+      }
+      
+      .chart-grid-line {
+        stroke: rgba(0, 0, 0, 0.1);
+        stroke-width: 1;
+      }
+      
+      .chart-axis-line {
+        stroke: rgba(0, 0, 0, 0.3);
+        stroke-width: 2;
+      }
+      
+      .reference-line {
+        stroke: #ef4444;
+        stroke-width: 3;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+      }
+
+      .arrow-down {
+        animation: bounce 2s infinite;
+      }
+
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {
+          transform: translateY(0);
+        }
+        40% {
+          transform: translateY(-5px);
+        }
+        60% {
+          transform: translateY(-3px);
+        }
+      }
+
+      /* Layout 100% viewport */
+      .main-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .content-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .table-section {
+        flex: 0 0 auto;
+        min-height: 0;
+      }
+
+      .chart-section {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .chart-content {
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* Responsividade aprimorada */
+      @media (max-width: 768px) {
+        .table-section {
+          flex: 0 0 35vh;
+        }
+        
+        .chart-section {
+          flex: 1;
+        }
+      }
+      
+      @media (max-width: 640px) {
+        .table-section {
+          flex: 0 0 40vh;
+        }
+        
+        .arrow-objective {
+          right: 2px !important;
+        }
+        
+        .arrow-objective .arrow-text {
+          font-size: 0.625rem !important;
+          padding: 0.25rem 0.5rem !important;
+        }
+      }
+
+      @media (max-height: 600px) {
+        .table-section {
+          flex: 0 0 45vh;
+        }
+      }
+
+      /* Scroll customizado para tabela em telas muito pequenas */
+      .table-scroll {
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e0 transparent;
+      }
+
+      .table-scroll::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      .table-scroll::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .table-scroll::-webkit-scrollbar-thumb {
+        background-color: #cbd5e0;
+        border-radius: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="main-container bg-[#f2f2f2]">
+      
+      <!-- Header fixo -->
+      <header class="flex-shrink-0 text-center py-2 sm:py-4 px-2 sm:px-4">
+        <h1 class="text-lg sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-[#0d0d0d] mb-2 sm:mb-3">DEPES - AFASTADOS</h1>
+        <div class="w-12 sm:w-16 lg:w-24 h-0.5 sm:h-1 bg-[#f2d64b] mx-auto rounded-full"></div>
+      </header>
+
+      <div class="content-wrapper px-2 sm:px-4 pb-2 sm:pb-4">
+        
+        <!-- Seção da Tabela -->
+        <div class="table-section mb-2 sm:mb-4">
+          <div class="bg-white rounded-lg sm:rounded-xl lg:rounded-2xl shadow-lg sm:shadow-xl lg:shadow-2xl border border-gray-200 h-full flex flex-col">
+            
+            <!-- Cabeçalho da Tabela -->
+            <div class="bg-[#f2d64b] px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 border-b-2 border-gray-300 flex-shrink-0">
+              <div class="grid grid-cols-4 gap-1 sm:gap-2 lg:gap-4 xl:gap-8 items-center">
+                <div class="font-bold text-xs sm:text-sm lg:text-lg xl:text-xl text-[#0d0d0d]">MÊS / ANO</div>
+                <div class="font-bold text-xs sm:text-sm lg:text-lg xl:text-xl text-[#0d0d0d] text-center">INSS</div>
+                <div class="font-bold text-xs sm:text-sm lg:text-lg xl:text-xl text-[#0d0d0d] text-center">AP. INVALIDEZ</div>
+                <div class="font-bold text-xs sm:text-sm lg:text-lg xl:text-xl text-[#0d0d0d] text-center">TOTAL AFASTADOS</div>
+              </div>
+            </div>
+
+            <!-- Dados da Tabela com scroll se necessário -->
+            <div class="table-scroll flex-1 divide-y divide-gray-200">
+              
+              <!-- JUL/24 -->
+              <div class="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 hover:bg-gray-50 transition-colors">
+                <div class="grid grid-cols-4 gap-1 sm:gap-2 lg:gap-4 xl:gap-8 items-center">
+                  <div class="flex flex-col lg:flex-row items-start lg:items-center gap-1 lg:gap-2">
+                    <span class="text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold text-[#0d0d0d]">JUL / 24</span>
+                    <span class="px-1 sm:px-2 lg:px-3 py-0.5 sm:py-1 bg-[#fce694] text-[#373737] text-xs lg:text-sm font-medium rounded-full shadow-md">
+                      1 ANO ATRÁS
+                    </span>
+                  </div>
+                  <div class="text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold text-[#0d0d0d] text-center">279</div>
+                  <div class="text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold text-[#0d0d0d] text-center">369</div>
+                  <div class="text-xs sm:text-sm lg:text-lg xl:text-xl font-bold text-[#0d0d0d] text-center bg-yellow-100 py-1 rounded-lg">648</div>
+                </div>
+              </div>
+
+              <!-- MAI/25 -->
+              <div class="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 hover:bg-gray-50 transition-colors">
+                <div class="grid grid-cols-4 gap-1 sm:gap-2 lg:gap-4 xl:gap-8 items-center">
+                  <div class="text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold text-[#0d0d0d]">MAI / 25</div>
+                  <div class="text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold text-[#0d0d0d] text-center">302</div>
+                  <div class="text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold text-[#0d0d0d] text-center">380</div>
+                  <div class="text-xs sm:text-sm lg:text-lg xl:text-xl font-bold text-[#0d0d0d] text-center bg-yellow-100 py-1 rounded-lg">682</div>
+                </div>
+              </div>
+
+              <!-- JUN/25 -->
+              <div class="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 hover:bg-gray-50 transition-colors">
+                <div class="grid grid-cols-4 gap-1 sm:gap-2 lg:gap-4 xl:gap-8 items-center">
+                  <div class="text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold text-[#0d0d0d]">JUN / 25</div>
+                  <div class="text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold text-[#0d0d0d] text-center">306</div>
+                  <div class="text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold text-[#0d0d0d] text-center">381</div>
+                  <div class="text-xs sm:text-sm lg:text-lg xl:text-xl font-bold text-[#0d0d0d] text-center bg-yellow-100 py-1 rounded-lg">687</div>
+                </div>
+              </div>
+
+              <!-- JUL/25 (Atual) -->
+              <div class="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 bg-red-50 border-l-4 border-red-500">
+                <div class="grid grid-cols-4 gap-1 sm:gap-2 lg:gap-4 xl:gap-8 items-center">
+                  <div class="flex flex-col lg:flex-row items-start lg:items-center gap-1 lg:gap-2">
+                    <span class="text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold text-[#0d0d0d]">JUL / 25</span>
+                    <span class="px-1 sm:px-2 lg:px-3 py-0.5 sm:py-1 bg-[#fce694]/[0.15] text-[#1f1e1e] text-xs lg:text-sm font-medium rounded-full shadow-md">
+                      MÊS ATUAL
+                    </span>
+                  </div>
+                  <div class="text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold text-[#0d0d0d] text-center">308</div>
+                  <div class="text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold text-[#0d0d0d] text-center">382</div>
+                  <div class="text-xs sm:text-sm lg:text-lg xl:text-xl font-bold text-red-700 text-center bg-red-200 py-1 rounded-lg">690</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seção do Gráfico -->
+        <div class="chart-section">
+          <div class="bg-white rounded-lg sm:rounded-xl lg:rounded-2xl shadow-lg sm:shadow-xl lg:shadow-2xl border border-gray-200 h-full flex flex-col">
+            
+            <!-- Área do gráfico -->
+            <div class="chart-content flex flex-col p-2 sm:p-4 lg:p-6">
+              
+              <div class="flex flex-1 min-h-0">
+                
+                <!-- Y-axis labels container -->
+                <div class="w-8 sm:w-12 lg:w-16 text-right pr-1 sm:pr-2 lg:pr-4 text-gray-600 font-medium text-xs lg:text-sm relative flex-shrink-0"> 
+                  <div class="absolute top-0 right-0 transform -translate-y-1/2">
+                    <span class="text-xs lg:text-sm font-medium text-black bg-white px-1 lg:px-2 py-0.5 lg:py-1 rounded shadow-sm">700</span>
+                  </div>
+                  <div class="absolute right-0 transform -translate-y-1/2" style="top: 14.3%;">
+                    <span class="text-xs lg:text-sm font-medium text-black bg-white px-1 lg:px-2 py-0.5 lg:py-1 rounded shadow-sm">650</span>
+                  </div>
+                  <div class="absolute right-0 transform -translate-y-1/2" style="top: 48.2%;">
+                    <span class="text-xs lg:text-sm font-medium text-red-600 bg-red-50 px-1 lg:px-2 py-0.5 lg:py-1 rounded shadow-sm font-bold border border-red-200">363</span>
+                  </div>
+                  <div class="absolute bottom-0 right-0 transform translate-y-1/2">
+                    <span class="text-xs lg:text-sm font-medium text-black bg-white px-1 lg:px-2 py-0.5 lg:py-1 rounded shadow-sm">0</span>
+                  </div>
+                </div>
+
+                <!-- Chart content (grid, bars) -->
+                <div class="flex-1 relative min-h-0">
+                  
+                  <!-- Linhas de grade horizontais -->
+                  <div class="absolute inset-0 z-0">
+                     <div class="absolute w-full border-t border-gray-200" style="top: 0%;"></div> <!-- 700 -->
+                     <div class="absolute w-full border-t border-gray-200" style="top: 14.3%;"></div> <!-- 650 -->
+                     <div class="absolute w-full border-t-2 border-red-500" style="top: 48.2%;"></div> <!-- 363 (Meta line) -->
+                     <div class="absolute w-full border-t-2 border-gray-400" style="top: 100%;"></div> <!-- 0 -->
+                  </div>
+
+                  <!-- Vertical line for Y-axis -->
+                  <div class="absolute left-0 top-0 h-full border-l-2 border-gray-400 z-0"></div>
+
+                  <!-- Container das barras -->
+                  <div class="relative h-full flex items-end justify-around px-1 sm:px-2 lg:px-4 z-10 pb-6 sm:pb-8 lg:pb-0">
+                    
+                    <!-- JUL/24 (648) -->
+                    <div class="flex flex-col items-center justify-end h-full relative">
+                      <div class="absolute top-1 sm:top-2 lg:top-3 text-black text-xs sm:text-sm lg:text-lg font-bold px-1 py-0.5 lg:py-1 rounded shadow-lg transform -translate-y-2">648</div>
+                      <div class="w-6 sm:w-10 lg:w-16 bg-[#f2d64b] rounded-t-md" style="height: calc((648 / 700) * 88%);"></div>
+                    </div>
+
+                    <!-- MAI/25 (682) -->
+                    <div class="flex flex-col items-center justify-end h-full relative">
+                      <div class="absolute top-0 text-black text-xs sm:text-sm lg:text-lg font-bold px-1 py-0.5 lg:py-1 rounded shadow-lg transform -translate-y-2">682</div>
+                      <div class="w-6 sm:w-10 lg:w-16 bg-[#f2d64b] rounded-t-md" style="height: calc((682 / 700) * 100%);"></div>
+                    </div>
+
+                    <!-- JUN/25 (687) -->
+                    <div class="flex flex-col items-center justify-end h-full relative">
+                      <div class="absolute top-0 text-black text-xs sm:text-sm lg:text-lg font-bold px-1 py-0.5 lg:py-1 rounded shadow-lg transform -translate-y-2">687</div>
+                      <div class="w-6 sm:w-10 lg:w-16 bg-[#f2d64b] rounded-t-md" style="height: calc((687 / 700) * 100%);"></div>
+                    </div>
+
+                    <!-- JUL/25 (690) -->
+                    <div class="flex flex-col items-center justify-end h-full relative">
+                      <div class="absolute top-0 text-black text-xs sm:text-sm lg:text-lg font-bold px-1 py-0.5 lg:py-1 rounded shadow-lg transform -translate-y-2">690</div>
+                      <div class="w-6 sm:w-10 lg:w-16 bg-[#f2d64b] rounded-t-md" style="height: calc((690 / 700) * 100%);"></div>
+                    </div>
+
+                  </div>
+
+                  <!-- Seta indicativa para baixo -->
+                  <div class="absolute arrow-down z-20 arrow-objective" style="top: 50%; right: 5px;">
+                    <div class="flex flex-col items-center">
+                      <div class="bg-red-500 text-white arrow-text px-2 lg:px-3 py-1 rounded-lg text-xs font-bold shadow-lg mb-1">
+                        <span class="hidden sm:inline">Objetivo: ↓ Abaixo da Meta</span>
+                        <span class="sm:hidden">↓ Meta</span>
+                      </div>
+                      <div class="text-red-500 text-sm sm:text-lg lg:text-xl font-bold">
+                        ↓
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Labels de mês/ano abaixo do gráfico -->
+              <div class="flex justify-around px-2 sm:px-8 lg:px-20 pt-2 sm:pt-3 lg:pt-4 border-t border-gray-100 flex-shrink-0">
+                <div class="text-center">
+                  <p class="font-bold text-xs sm:text-sm lg:text-lg text-gray-800">JUL / 24</p>
+                </div>
+                <div class="text-center">
+                  <p class="font-bold text-xs sm:text-sm lg:text-lg text-gray-800">MAI / 25</p>
+                </div>
+                <div class="text-center">
+                  <p class="font-bold text-xs sm:text-sm lg:text-lg text-gray-800">JUN / 25</p>
+                </div>
+                <div class="text-center">
+                  <p class="font-bold text-xs sm:text-sm lg:text-lg text-gray-800">JUL / 25</p>
+                </div>
+              </div>
+
+              <!-- Legenda em baixo -->
+              <div class="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4 lg:gap-6 pt-2 sm:pt-4 lg:pt-6 border-t border-gray-200 flex-shrink-0">
+                <div class="flex items-center gap-1 sm:gap-2">
+                  <div class="w-2 sm:w-3 lg:w-4 h-2 sm:h-3 lg:h-4 rounded bg-[#f2d64b]"></div>
+                  <span class="font-medium text-gray-700 text-xs sm:text-sm lg:text-base">Realizado</span>
+                </div>
+                
+                <div class="flex items-center gap-1 sm:gap-2">
+                  <div class="w-3 sm:w-4 lg:w-6 h-0.5 bg-red-500"></div>
+                  <span class="font-medium text-gray-700 text-xs sm:text-sm lg:text-base">Meta</span>
+                </div>
+                
+                <div class="flex items-center gap-1 sm:gap-2">
+                  <div class="px-2 lg:px-3 py-0.5 sm:py-1 rounded-full bg-red-100 text-red-700 font-semibold text-xs sm:text-sm lg:text-base">Ruim</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

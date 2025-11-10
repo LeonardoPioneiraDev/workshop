@@ -15,7 +15,6 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -31,6 +30,7 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -54,8 +54,8 @@
   --primary-foreground: oklch(0.1 0 0);
   --secondary: oklch(0.2 0.01 260);
   --secondary-foreground: oklch(0.95 0.005 260);
-  --muted: oklch(0.96 0.01 260); /* Cinza claro para elementos mudos */
-  --muted-foreground: oklch(0.45 0.02 260); /* Cinza médio para texto mudo */
+  --muted: oklch(0.96 0.01 260);
+  --muted-foreground: oklch(0.45 0.02 260);
   --accent: oklch(0.85 0.23 88);
   --accent-foreground: oklch(0.1 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -78,6 +78,13 @@
   --sidebar-accent-foreground: oklch(0.21 0.034 264.665);
   --sidebar-border: oklch(0.928 0.006 264.531);
   --sidebar-ring: oklch(0.707 0.022 261.325);
+
+  /* ✅ VARIÁVEIS ESPECÍFICAS PARA DASHBOARD */
+  --dashboard-yellow: #f2d64b;
+  --dashboard-dark: #0d0d0d;
+  --dashboard-bg: #f2f2f2;
+  --dashboard-red: #ef4444;
+  --dashboard-green: #10b981;
 }
 
 .dark {
@@ -99,12 +106,12 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.88 0.24 88); /* Amarelo */
-  --chart-2: oklch(0.6 0.19 260); /* Azul */
-  --chart-3: oklch(0.65 0.23 25); /* Vermelho */
-  --chart-4: oklch(0.75 0.21 60); /* Laranja */
-  --chart-5: oklch(0.7 0.18 140); /* Verde */
-  --chart-6: oklch(0.6 0.01 260); /* Cinza */
+  --chart-1: oklch(0.88 0.24 88);
+  --chart-2: oklch(0.6 0.19 260);
+  --chart-3: oklch(0.65 0.23 25);
+  --chart-4: oklch(0.75 0.21 60);
+  --chart-5: oklch(0.7 0.18 140);
+  --chart-6: oklch(0.6 0.01 260);
   --sidebar: oklch(0.21 0.034 264.665);
   --sidebar-foreground: oklch(0.985 0.002 247.839);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -124,7 +131,19 @@
   }
 }
 
-/* Animações e efeitos adicionais */
+/* ✅ ANIMAÇÕES ESPECÍFICAS PARA DASHBOARD */
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-5px);
+  }
+  60% {
+    transform: translateY(-3px);
+  }
+}
+
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -132,6 +151,164 @@
   100% {
     background-position: 200% 0;
   }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// Adicionar no método generateHTMLReport, na seção de estilos:
+
+.alert-section {
+    margin: 20px 0;
+}
+
+.alert {
+    padding: 15px 20px;
+    border-radius: 8px;
+    border-left: 5px solid;
+    margin-bottom: 20px;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-left-color: #ffc107;
+    color: #856404;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border-left-color: #dc3545;
+    color: #721c24;
+}
+
+.analysis-section {
+    margin-top: 40px;
+    padding: 30px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+}
+
+.analysis-section h4 {
+    color: #495057;
+    margin-bottom: 25px;
+    font-size: 1.3em;
+    text-align: center;
+}
+
+.analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.analysis-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.analysis-card h5 {
+    color: #667eea;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    text-align: center;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.analysis-list {
+    space-y: 10px;
+}
+
+.analysis-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.analysis-item:last-child {
+    border-bottom: none;
+}
+
+.analysis-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.analysis-value {
+    font-weight: bold;
+    color: #667eea;
+}
+
+.insights-section {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.insights-section h5 {
+    color: #28a745;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.insights-list {
+    list-style: none;
+    padding: 0;
+}
+
+.insights-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f3f4;
+    color: #495057;
+}
+
+.insights-list li:last-child {
+    border-bottom: none;
+}
+
+.insights-list li strong {
+    color: #667eea;
+}
+
+@keyframes growHeight {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--final-height);
+  }
+}
+
+/* ✅ CLASSES DE ANIMAÇÃO */
+.animate-bounce {
+  animation: bounce 2s infinite;
 }
 
 .animate-shimmer {
@@ -145,9 +322,221 @@
   animation: shimmer 1.5s infinite;
 }
 
-/* Melhorias para dark mode */
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.5s ease-out;
+}
+
+.animate-grow-height {
+  animation: growHeight 0.8s ease-out;
+}
+
+/* ✅ LAYOUT ESPECÍFICO PARA DASHBOARD */
+.dashboard-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--dashboard-bg);
+}
+
+.dashboard-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dashboard-table-section {
+  flex: 0 0 35vh;
+  min-height: 250px;
+}
+
+.dashboard-chart-section {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ✅ SCROLL CUSTOMIZADO PARA TABELA */
+.table-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 transparent;
+}
+
+.table-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 2px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #a0aec0;
+}
+
+/* ✅ CORES ESPECÍFICAS DO DASHBOARD */
+.dashboard-yellow {
+  background-color: var(--dashboard-yellow);
+}
+
+.dashboard-text-dark {
+  color: var(--dashboard-dark);
+}
+
+.dashboard-bg {
+  background-color: var(--dashboard-bg);
+}
+
+.dashboard-red {
+  color: var(--dashboard-red);
+}
+
+.dashboard-green {
+  color: var(--dashboard-green);
+}
+
+/* ✅ RESPONSIVIDADE APRIMORADA */
+@media (max-width: 768px) {
+  .dashboard-table-section {
+    flex: 0 0 35vh;
+    min-height: 200px;
+  }
+  
+  .dashboard-chart-section {
+    flex: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-table-section {
+    flex: 0 0 40vh;
+    min-height: 180px;
+  }
+  
+  .arrow-objective {
+    right: 2px !important;
+  }
+  
+  .arrow-objective .arrow-text {
+    font-size: 0.625rem !important;
+    padding: 0.25rem 0.5rem !important;
+  }
+}
+
+@media (max-height: 600px) {
+  .dashboard-table-section {
+    flex: 0 0 45vh;
+    min-height: 160px;
+  }
+}
+
+/* ✅ MELHORIAS PARA DARK MODE */
 @media (prefers-color-scheme: dark) {
   .dark\:from-slate-950 {
     --tw-gradient-from: rgb(2 6 23);
   }
+  
+  .dashboard-container.dark {
+    background-color: oklch(0.13 0.028 261.692);
+  }
+  
+  .dashboard-yellow.dark {
+    background-color: oklch(0.88 0.24 88);
+  }
+  
+  .dashboard-text-dark.dark {
+    color: oklch(0.985 0.002 247.839);
+  }
+}
+
+/* ✅ EFEITOS ESPECIAIS PARA GRÁFICOS */
+.chart-bar {
+  transition: all 0.3s ease;
+}
+
+.chart-bar:hover {
+  filter: brightness(1.1);
+  transform: scale(1.02);
+}
+
+.chart-grid-line {
+  stroke: rgba(0, 0, 0, 0.1);
+  stroke-width: 1;
+}
+
+.chart-axis-line {
+  stroke: rgba(0, 0, 0, 0.3);
+  stroke-width: 2;
+}
+
+.reference-line {
+  stroke: var(--dashboard-red);
+  stroke-width: 3;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+/* ✅ LOADING STATES */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ✅ BADGES E INDICADORES */
+.badge-ano-anterior {
+  background-color: rgba(252, 230, 148, 1);
+  color: rgba(55, 55, 55, 1);
+}
+
+.badge-mes-atual {
+  background-color: rgba(252, 230, 148, 0.15);
+  color: rgba(31, 30, 30, 1);
+}
+
+/* ✅ ESTADOS DE HOVER E FOCUS */
+.dashboard-row:hover {
+  background-color: rgba(249, 250, 251, 1);
+  transition: background-color 0.2s ease;
+}
+
+.dashboard-card {
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* ✅ ANIMAÇÕES DE ENTRADA */
+.stagger-animation {
+  animation-delay: calc(var(--stagger-delay, 0) * 100ms);
+}
+
+/* ✅ UTILITÁRIOS */
+.text-shadow {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.box-shadow-soft {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.box-shadow-strong {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }

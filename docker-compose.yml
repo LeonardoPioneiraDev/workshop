@@ -1,64 +1,257 @@
-version: '3.8'
 services:
-  backend:
-    build:
-      context: ./apps/backend
-      dockerfile: Dockerfile
-    container_name: backend
-    ports:
-      - "3024:3024"
-    environment:
-      - HOST=0.0.0.0
-      - PORT=3024
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=admin123
-      - POSTGRES_DB=dashboard_db
-      # Outras variáveis de ambiente necessárias
-    networks:
-      - app-network
-    depends_on:
-      - postgres
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./apps/frontend
-      dockerfile: Dockerfile
-      args:
-        #- API_URL=http://10.10.100.79:3024  # Usado durante o build
-        - API_URL=http://ccoapi.vpioneira.com.br:3021  # Usado durante o build
-    container_name: frontend
-    ports:
-      - "5274:5274"
-    environment:
-      #- API_URL=http://10.10.100.79:3021  # Para acesso externo (substituído em runtime)
-      - API_URL=http://ccoapi.vpioneira.com.br:3021  # Para acesso externo (substituído em runtime)
-    networks:
-      - app-network
-    depends_on:
-      - backend
-    restart: unless-stopped
-
+  # ==========================================
+  # 🗄️ BANCO DE DADOS POSTGRESQL
+  # ==========================================
   postgres:
-    image: postgres:13
-    container_name: postgres
-    ports:
-      - '5432:5432'
+    image: postgres:15-alpine
+    container_name: workshop-postgres
+    restart: unless-stopped
     environment:
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=admin123
-      - POSTGRES_DB=dashboard_db
+      POSTGRES_USER: workshop
+      POSTGRES_PASSWORD: workshop123
+      POSTGRES_DB: workshop_db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     networks:
-      - app-network
+      - workshop-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U workshop -d workshop_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
+  # ==========================================
+  # 🚀 BACKEND API COM ORACLE
+  # ==========================================
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: workshop-backend
+    restart: unless-stopped
+    environment:
+      # Ambiente
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3333
+      
+      # Banco de dados PostgreSQL
+      DATABASE_TYPE: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: workshop
+      DATABASE_PASSWORD: workshop123
+      DATABASE_NAME: workshop_db
+      DATABASE_SCHEMA: public
+      DATABASE_SYNCHRONIZE: false
+      DATABASE_LOGGING: false
+      DATABASE_SSL: false
+      DATABASE_MAX_CONNECTIONS: 20
+      DATABASE_CONNECTION_TIMEOUT: 30000
+      DATABASE_QUERY_TIMEOUT: 30000
+      
+      # Autenticação
+      AUTH_ENABLED: true
+      AUTH_DATABASE: postgresql
+      JWT_SECRET: workshop_secret_key_super_segura_2024_production
+      JWT_EXPIRES_IN: 24h
+      JWT_REFRESH_SECRET: workshop_refresh_secret_key_2024_production
+      JWT_REFRESH_EXPIRES_IN: 7d
+      BCRYPT_ROUNDS: 12
+      
+      # E-mail
+      EMAIL_ENABLED: true
+      EMAIL_DEBUG: false
+      EMAIL_LOG_ERRORS: true
+      EMAIL_TIMEOUT: 60000
+      EMAIL_RETRY_ATTEMPTS: 3
+      EMAIL_RETRY_DELAY: 2000
+      SMTP_HOST: mail.vpioneira.com.br
+      SMTP_PORT: 587
+      SMTP_USER: suporte@vpioneira.com.br
+      SMTP_PASS: 564139
+      SMTP_SECURE: false
+      SMTP_TLS: true
+      SMTP_STARTTLS: true
+      SMTP_IGNORE_TLS: false
+      EMAIL_FROM_NAME: Workshop Sistema
+      EMAIL_FROM_ADDRESS: suporte@vpioneira.com.br
+      
+      # URLs
+      FRONTEND_URL: http://10.10.100.176:3008
+      VITE_API_BASE_URL: http://10.10.100.176:3333/
+      
+      # CORS
+      CORS_ORIGIN: http://10.10.100.176:3008,http://localhost:3008,http://10.10.100.176:3000
+      CORS_METHODS: GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS
+      CORS_ALLOWED_HEADERS: Content-Type,Authorization,X-Requested-With,Accept,Origin
+      CORS_CREDENTIALS: true
+      CORS_MAX_AGE: 86400
+      
+      # ==========================================
+      # 🔶 ORACLE DATABASE CONFIGURATION
+      # ==========================================
+      ORACLE_ENABLED: true
+      ORACLE_USER: glbconsult
+      ORACLE_PASSWORD: "GlbCns2025$#001"
+      ORACLE_CONNECTION_STRING: //10.0.1.191:1521/orcl_pdb1.sub02151801351.vcnpioneira.oraclevcn.com
+      ORACLE_HOST: 10.0.1.191
+      ORACLE_PORT: 1521
+      ORACLE_SERVICE_NAME: orcl_pdb1.sub02151801351.vcnpioneira.oraclevcn.com
+      ORACLE_CLIENT_PATH: /opt/oracle/instantclient
+      
+      # Oracle Performance Settings
+      ORACLE_POOL_MIN: 5
+      ORACLE_POOL_MAX: 50
+      ORACLE_POOL_INCREMENT: 2
+      ORACLE_POOL_TIMEOUT: 300000
+      ORACLE_CONNECT_TIMEOUT: 180000
+      ORACLE_FETCH_ARRAY_SIZE: 2000
+      ORACLE_PREFETCH_ROWS: 200
+      ORACLE_AUTO_COMMIT: false
+      ORACLE_STATEMENT_CACHE_SIZE: 100
+      ORACLE_MAX_RETRIES: 3
+      ORACLE_RETRY_DELAY: 5000
+      ORACLE_QUERY_TIMEOUT: 900000
+      
+      # Oracle Environment Variables
+      ORACLE_HOME: /opt/oracle/instantclient
+      LD_LIBRARY_PATH: /opt/oracle/instantclient
+      TNS_ADMIN: /opt/oracle/instantclient
+      NLS_LANG: AMERICAN_AMERICA.UTF8
+      
+      # ==========================================
+      # 🏢 DEPARTAMENTOS
+      # ==========================================
+      DEPARTAMENTOS_ENABLED: true
+      JURIDICO_ENABLED: true
+      JURIDICO_CACHE_TTL: 3600
+      JURIDICO_MAX_RECORDS: 1000
+      
+      # Configurações de produção
+      SWAGGER_ENABLED: true
+      AUTO_CREATE_ADMIN: true
+      ADMIN_USERNAME: admin
+      ADMIN_EMAIL: leonardolopes@vpioneira.com.br
+      ADMIN_PASSWORD: Admin@123456
+      ADMIN_FULL_NAME: Leonardo Lopes
+      
+      # Logs
+      LOG_LEVEL: info
+      LOG_FILE_ENABLED: true
+      LOG_TO_FILE: true
+      LOG_TO_CONSOLE: true
+      LOG_FILE_PATH: logs/workshop.log
+      LOG_MAX_FILES: 10
+      LOG_MAX_SIZE: 10m
+      ENABLE_METRICS: true
+      ENABLE_HEALTH_CHECK: true
+      
+      # Performance
+      COMPRESSION_ENABLED: true
+      COMPRESSION_LEVEL: 6
+      API_TIMEOUT: 30000
+      API_RETRY_ATTEMPTS: 3
+      API_RETRY_DELAY: 1000
+      
+      # Rate limiting
+      RATE_LIMIT_ENABLED: true
+      RATE_LIMIT_GLOBAL_TTL: 60000
+      RATE_LIMIT_GLOBAL_LIMIT: 100
+      RATE_LIMIT_AUTH_TTL: 900000
+      RATE_LIMIT_AUTH_LIMIT: 5
+      RATE_LIMIT_PASSWORD_RESET_TTL: 3600000
+      RATE_LIMIT_PASSWORD_RESET_LIMIT: 3
+      
+      # Cache
+      CACHE_ENABLED: true
+      CACHE_DATABASE: postgresql
+      CACHE_TTL: 3600
+      CACHE_MAX_SIZE: 1000
+      
+      # Segurança
+      HELMET_ENABLED: true
+      HELMET_CSP_ENABLED: false
+      HELMET_CROSS_ORIGIN_EMBEDDER_POLICY: false
+      TRUST_PROXY: false
+      
+      # Limpeza
+      CLEANUP_ENABLED: true
+      CLEANUP_INTERVAL_MINUTES: 60
+      CLEANUP_EXPIRED_TOKENS: true
+      CLEANUP_FAILED_LOGIN_ATTEMPTS: true
+      
+      # Health check
+      HEALTH_CHECK_ENABLED: true
+      HEALTH_CHECK_DATABASE: true
+      HEALTH_CHECK_MEMORY: true
+      HEALTH_CHECK_DISK: false
+      
+    ports:
+      - "3333:3333"
+    volumes:
+      - backend_logs:/app/logs
+      - backend_uploads:/app/uploads
+    networks:
+      - workshop-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ==========================================
+  # 🎨 FRONTEND WEB
+  # ==========================================
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: http://10.10.100.176:3333
+        NODE_ENV: production
+    container_name: workshop-frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    ports:
+      - "3008:3008"
+    networks:
+      - workshop-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3008/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+# ==========================================
+# 🌐 REDES
+# ==========================================
 networks:
-  app-network:
+  workshop-network:
     driver: bridge
+    name: workshop-network
 
+# ==========================================
+# 💾 VOLUMES
+# ==========================================
 volumes:
   postgres_data:
+    name: workshop_postgres_data
+  backend_logs:
+    name: workshop_backend_logs
+  backend_uploads:
+    name: workshop_backend_uploads

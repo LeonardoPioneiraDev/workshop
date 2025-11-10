@@ -1,0 +1,58 @@
+  const roles: Role[] = [
+    {
+      id: 'admin',
+      name: 'Administrador',
+      description: 'Controle total do sistema',
+      color: 'bg-red-500/20 text-red-400',
+      permissions: ['users:read', 'users:write', 'users:delete', 'system:admin', 'oracle:read', 'reports:read', 'dashboard:full']
+    },
+    {
+      id: 'diretor',
+      name: 'Diretor(a)',
+      description: 'Direção executiva',
+      color: 'bg-purple-500/20 text-purple-400',
+      permissions: ['users:read', 'oracle:read', 'reports:read', 'dashboard:read', 'analytics:read']
+    },
+    {
+      id: 'gerente',
+      name: 'Gerente',
+      description: 'Gestão departamental',
+      color: 'bg-blue-500/20 text-blue-400',
+      permissions: ['users:read', 'reports:read', 'dashboard:read', 'department:manage']
+    },
+    {
+      id: 'coordenador',
+      name: 'Coordenador(a)',
+      description: 'Coordenação de equipes',
+      color: 'bg-green-500/20 text-green-400',
+      permissions: ['dashboard:read', 'team:manage', 'reports:basic']
+    },
+    {
+      id: 'supervisor',
+      name: 'Supervisor(a)',
+      description: 'Supervisão de atividades',
+      color: 'bg-yellow-500/20 text-yellow-400',
+      permissions: ['dashboard:read', 'operations:read', 'monitoring:read']
+    },
+    {
+      id: 'analista',
+      name: 'Analista',
+      description: 'Análise e relatórios',
+      color: 'bg-cyan-500/20 text-cyan-400',
+      permissions: ['dashboard:read', 'reports:create', 'data:analysis']
+    },
+    {
+      id: 'operador',
+      name: 'Operador(a)',
+      description: 'Operação de sistemas',
+      color: 'bg-orange-500/20 text-orange-400',
+      permissions: ['oracle:read', 'dashboard:read', 'monitoring:read']
+    },
+    {
+      id: 'user',
+      name: 'Usuário',
+      description: 'Usuário padrão',
+      color: 'bg-gray-500/20 text-gray-400',
+      permissions: ['dashboard:read']
+    }
+  ];

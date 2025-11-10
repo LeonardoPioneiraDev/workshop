@@ -1,14 +1,12 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    "module": "commonjs",
-    "target": "ES2022",
-    "lib": ["ES2023"],
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
     "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true
-  }
+    "noEmit": true
+  },
+  "include": ["vite.config.ts"]
 }

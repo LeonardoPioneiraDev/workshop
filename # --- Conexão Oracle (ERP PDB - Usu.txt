@@ -1,8 +1,0 @@
-# --- Conexão Oracle (ERP PDB - Usuário GLBCONSULT) ---
-ORACLE_USER=glbconsult
-ORACLE_PASSWORD="GlbTI2o29$#"
-ORACLE_CONNECT_STRING=//10.0.1.191:1521/orcl_pdb1.sub02151801351.vcnpioneira.oraclevcn.com
-ORACLE_HOST=10.0.1.191
-ORACLE_PORT=1521
-ORACLE_SERVICE_NAME=orcl_pdb1.sub02151801351.vcnpioneira.oraclevcn.com
-# --- Conexão Oracle (ERP PDB - Usuário GLBCONSULT) ---

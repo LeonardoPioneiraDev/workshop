@@ -1,719 +1,587 @@
 // src/pages/DashboardPage.tsx
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { cn } from "@/lib/utils.js";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@radix-ui/react-tooltip";
-import { isToday, parseISO } from "date-fns";
-import { AnimatePresence, motion } from "framer-motion";
-import isEqual from "lodash/isEqual";
-import {
-  Activity,
-  AlertCircle,
-  AlertTriangle,
-  ArrowLeft,
-  Bus,
-  CalendarCheck2,
-  CalendarDays,
-  CheckCircle2,
-  Clock,
-  Filter,
-  Info,
-  Loader2,
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { 
+  ArrowLeft, 
+  ArrowRight, 
+  Play, 
+  Pause, 
+  Settings, 
+  Calendar, 
+  Clock, 
+  Database, 
+  Zap, 
   RefreshCw,
-  Search,
-  SearchX,
+  BarChart3,
+  Users,
   TrendingUp,
-} from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import logo from "../../assets/logo.png";
-import { BarChart } from "../components/charts/BarChartCumprimento";
-import { FiltrosDashboard } from "../components/filters/FiltrosDashboard";
-import { useFiltros } from "../contexts/FiltrosContext";
-import { api } from "../services/api";
-
-interface ViagemData {
-  // Campos numéricos existentes
-  StatusInicio: number;
-  StatusFim: number;
-  NaoCumprida: number;
-  ParcialmenteCumprida: number;
-  AdiantadoInicio: number;
-  AtrasadoInicio: number;
-  ForadoHorarioInicio: number;
-  AdiantadoFim: number;
-  AtrasadoFim: number;
-  ForadoHorarioFim: number;
-
-  // Campos de texto necessários para os filtros
-  SentidoText?: string;
-  PrefixoRealizado?: string;
-  NomeMotorista?: string;
-  NomeLinha?: string;
-  NomePI?: string;
-  NomePF?: string;
-
-  // Outros campos que podem ser úteis
-  InicioPrevisto?: string;
-  InicioRealizado?: string;
-  FimPrevisto?: string;
-  FimRealizado?: string;
-  InicioRealizadoText?: string;
-  FimRealizadoText?: string;
-  NumeroViagem?: number;
-  Viagem?: number;
-}
-interface Filtros {
-  dataInicio: string;
-  dataFim: string;
-  tipoVisualizacao: string;
-  dia?: string;
-  numerolinha?: string;
-  idservico?: string;
-  prefixorealizado?: string;
-  statusini?: string;
-  statusfim?: string;
-  [key: string]: string | undefined;
-}
+  Target,
+  Maximize2,
+  Minimize2
+} from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { slidesConfig } from '@/config/slides';
 
 export function DashboardPage() {
-  const [dados, setDados] = useState<ViagemData[]>([]);
-  const [filtros, setFiltros] = useState<Filtros>({
-    dataInicio: "",
-    dataFim: "",
-    tipoVisualizacao: "inicio",
-  });
-  const [corBarra, setCorBarra] = useState("rgba(250, 204, 21, 0.6)"); // Amarelo
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [semResultados, setSemResultados] = useState(false);
-  const [buscaIniciada, setBuscaIniciada] = useState(false);
-  const [statusAtualizacao, setStatusAtualizacao] = useState<
-    "nao-atualizado" | "atualizando" | "atualizado"
-  >("nao-atualizado");
-
-  const {
-    setFiltrosAplicados,
-    obterDescricaoFiltros,
-    filtrosDetalhados,
-    setFiltrosDetalhados,
-    filtrosPrincipais,
-    setFiltrosPrincipais,
-    ultimaAtualizacao,
-    salvarFiltrosAtuais,
-  } = useFiltros();
-
   const navigate = useNavigate();
-  const filtrosRef = useRef<Filtros>(filtros);
-  const dadosRef = useRef<string>("");
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
   
+  // Estados principais
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showMetaInput, setShowMetaInput] = useState(false);
+  const [tempMeta, setTempMeta] = useState('');
+  const [isVisible, setIsVisible] = useState(false);
+  
+  // Metas dos slides
+  const [slideMetas, setSlideMetas] = useState<Record<string, number>>(() => {
+    const initialMetas: Record<string, number> = {};
+    slidesConfig.forEach(slide => {
+      initialMetas[slide.id] = slide.meta?.defaultValue || 50;
+    });
+    return initialMetas;
+  });
 
-  const gerarNovaCor = (): string => {
-    // Gerar tons de amarelo/âmbar
-    const hue = Math.floor(Math.random() * 30) + 40; // 40-70 (amarelo-laranja)
-    const saturation = Math.floor(Math.random() * 30) + 70; // 70-100
-    const lightness = Math.floor(Math.random() * 20) + 50; // 50-70
-    return `hsla(${hue}, ${saturation}%, ${lightness}%, 0.7)`;
+  const autoPlayIntervalRef = React.useRef<NodeJS.Timeout>();
+
+  // ✅ NAVEGAÇÃO
+  const goToNext = React.useCallback(() => {
+    setCurrentSlide(prev => (prev + 1) % slidesConfig.length);
+  }, []);
+
+  const goToPrevious = React.useCallback(() => {
+    setCurrentSlide(prev => (prev - 1 + slidesConfig.length) % slidesConfig.length);
+  }, []);
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
   };
 
-  const buscarDados = async (filtrosUsar: Filtros = filtrosRef.current) => {
-    setError(null);
-    setSemResultados(false);
-    setStatusAtualizacao("atualizando");
+  // ✅ AUTO-PLAY
+  const toggleAutoPlay = React.useCallback(() => {
+    setIsAutoPlaying(prev => !prev);
+  }, []);
 
-    try {
-      const filtrosAjustados = {
-        ...filtrosUsar,
-        dia: filtrosUsar.dia || filtrosUsar.dataInicio,
-      };
-
-      const params = new URLSearchParams();
-      if (filtrosAjustados.dia) params.append("dia", filtrosAjustados.dia);
-      if (filtrosAjustados.numerolinha)
-        params.append("numerolinha", filtrosAjustados.numerolinha);
-      if (filtrosAjustados.idservico)
-        params.append("idservico", filtrosAjustados.idservico);
-      if (filtrosAjustados.prefixorealizado)
-        params.append("prefixorealizado", filtrosAjustados.prefixorealizado);
-      if (filtrosAjustados.statusini)
-        params.append("statusini", filtrosAjustados.statusini);
-      if (filtrosAjustados.statusfim)
-        params.append("statusfim", filtrosAjustados.statusfim);
-
-      const importResp = await api.get(
-        `/cumprimentos/importar?${params.toString()}`,
-      );
-
-      if (importResp.data?.dados && Array.isArray(importResp.data.dados)) {
-        const novosDados = importResp.data.dados;
-        const novosDadosString = JSON.stringify(novosDados);
-
-        if (novosDados.length === 0) {
-          setSemResultados(true);
-        }
-
-        if (dadosRef.current !== novosDadosString) {
-          dadosRef.current = novosDadosString;
-
-          setDados(novosDados);
-          setCorBarra(gerarNovaCor());
-          setStatusAtualizacao("atualizado");
-          setFiltrosPrincipais(filtrosAjustados);
-          salvarFiltrosAtuais(
-            `Consulta de ${new Date().toLocaleDateString("pt-BR")}`,
-          );
-        } else {
-          setStatusAtualizacao("nao-atualizado");
-        }
-      } else {
-        setSemResultados(true);
+  React.useEffect(() => {
+    if (isAutoPlaying) {
+      autoPlayIntervalRef.current = setInterval(() => {
+        goToNext();
+      }, 10000); // 10 segundos por slide
+    } else {
+      if (autoPlayIntervalRef.current) {
+        clearInterval(autoPlayIntervalRef.current);
       }
-    } catch (error) {
-      setError("Erro ao buscar dados. Tente novamente.");
-      setStatusAtualizacao("nao-atualizado");
-    } finally {
-      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    if (filtros.dataInicio && filtros.dataFim) {
-      buscarDados();
-    }
-  }, [filtros]);
-
-  const isHoje = (data: string | undefined) => {
-    if (!data) return false;
-    try {
-      const dataFormatada = parseISO(data);
-      return isToday(dataFormatada);
-    } catch {
-      return false;
-    }
-  };
-
-  useEffect(() => {
-    const dataFinal = filtros?.dataFim || filtros?.dia;
-    const deveAtualizarAutomaticamente = isHoje(dataFinal);
-
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
-    if (!deveAtualizarAutomaticamente || !buscaIniciada || dados.length === 0) {
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      intervalRef.current = setInterval(() => {
-        if (isEqual(filtros, filtrosRef.current)) {
-          buscarDados();
-        }
-      }, 10000);
-    }, 2000);
 
     return () => {
-      clearTimeout(timeoutId);
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (autoPlayIntervalRef.current) {
+        clearInterval(autoPlayIntervalRef.current);
       }
     };
-  }, [buscaIniciada, filtros, dados]);
+  }, [isAutoPlaying, goToNext]);
 
-  const handleSubmitFiltros = (filtrosRecebidos: Record<string, string>) => {
-    const filtrosAtualizados: Filtros = {
-      dataInicio: filtrosRecebidos.dia || "",
-      dataFim: filtrosRecebidos.dia || "",
-      tipoVisualizacao: "inicio",
-      ...(filtrosRecebidos.numerolinha && {
-        numerolinha: filtrosRecebidos.numerolinha,
-      }),
-      ...(filtrosRecebidos.idservico && {
-        idservico: filtrosRecebidos.idservico,
-      }),
-      ...(filtrosRecebidos.prefixorealizado && {
-        prefixorealizado: filtrosRecebidos.prefixorealizado,
-      }),
-      ...(filtrosRecebidos.statusini && {
-        statusini: filtrosRecebidos.statusini,
-      }),
-      ...(filtrosRecebidos.statusfim && {
-        statusfim: filtrosRecebidos.statusfim,
-      }),
+  // ✅ CONTROLE DE TECLADO
+  React.useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      switch (event.key) {
+        case 'ArrowRight':
+        case ' ':
+          event.preventDefault();
+          goToNext();
+          break;
+        case 'ArrowLeft':
+          event.preventDefault();
+          goToPrevious();
+          break;
+        case 'Escape':
+          setIsAutoPlaying(false);
+          setIsFullscreen(false);
+          break;
+        case 'f':
+        case 'F':
+          if (event.ctrlKey) {
+            event.preventDefault();
+            setIsFullscreen(prev => !prev);
+          }
+          break;
+      }
     };
 
-    // ✅ NOVA SEÇÃO: Salvar TODOS os filtros no contexto
-    console.log('🔧 [DashboardPage] Salvando filtros no contexto:', {
-      filtrosAtualizados,
-      filtrosRecebidos
-    });
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [goToNext, goToPrevious]);
 
-    // 1. Salvar nos filtros principais (como já estava)
-    setFiltrosPrincipais(filtrosAtualizados);
-
-    // 2. ✅ NOVO: Também salvar nos filtros detalhados para garantir que chegem ao PDF
-    setFiltrosDetalhados({
-      ...filtrosDetalhados, // Manter filtros detalhados existentes (do ChartFilters)
-      ...filtrosAtualizados, // Adicionar filtros do dashboard
-      // Adicionar campos extras para melhor identificação
-      origemFiltro: 'dashboard',
-      dataConsulta: new Date().toISOString(),
-    });
-
-    // 3. Manter a funcionalidade existente
-    setFiltros(filtrosAtualizados);
-    filtrosRef.current = filtrosAtualizados;
-    setBuscaIniciada(true);
-    setLoading(true);
-    buscarDados(filtrosAtualizados);
-    setFiltrosAplicados(filtrosAtualizados);
-
-    // 4. ✅ NOVO: Debug para verificar se os filtros foram salvos
-    setTimeout(() => {
-      console.log('🔍 [DashboardPage] Verificando filtros salvos no contexto:', {
-        filtrosPrincipais: filtrosPrincipais,
-        filtrosDetalhados: filtrosDetalhados
-      });
-    }, 100);
+  // ✅ FULLSCREEN
+  const toggleFullscreen = () => {
+    setIsFullscreen(prev => !prev);
   };
 
-  const totaisViagens = {
-    total: dados.length,
-    analisadas: dados.filter((v) => v.StatusInicio > 0 || v.StatusFim > 0)
-      .length,
-    pendentes:
-      dados.length -
-      dados.filter((v) => v.StatusInicio > 0 || v.StatusFim > 0).length,
+  // ✅ META MANAGEMENT
+  const updateSlideMeta = React.useCallback((slideId: string, newMeta: number) => {
+    setSlideMetas(prev => ({
+      ...prev,
+      [slideId]: newMeta
+    }));
+  }, []);
+
+  const handleMetaSubmit = () => {
+    const newMeta = parseInt(tempMeta);
+    if (!isNaN(newMeta) && newMeta > 0) {
+      updateSlideMeta(currentSlideConfig.id, newMeta);
+      setShowMetaInput(false);
+      setTempMeta('');
+    }
   };
 
-  const statusColors = {
-    atualizando: "bg-blue-500",
-    atualizado: "bg-green-500",
-    "nao-atualizado": "bg-gray-500",
+  // ✅ PERÍODO ATUAL
+  const getPeriodoAtual = () => {
+    const hoje = new Date();
+    const anoAtual = hoje.getFullYear();
+    const mesAtual = hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    
+    return {
+      ano: anoAtual,
+      mes: mesAtual,
+      dataCompleta: hoje.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    };
   };
 
-  const statusTexts = {
-    atualizando: "Atualizando...",
-    atualizado: "Atualizado",
-    "nao-atualizado": "Sem atualizações",
-  };
+  const periodoAtual = getPeriodoAtual();
+  const currentSlideConfig = slidesConfig[currentSlide];
+  const CurrentSlideComponent = currentSlideConfig.component;
 
-  // CALCULAR formattedDate EM DashboardPage.tsx
-  const formattedDate = useMemo(() => {
-    const dataRef = filtrosPrincipais.dia || filtrosPrincipais.dataInicio;
-    if (dataRef) {
-      try {
-        // Adiciona T00:00:00 para garantir que a data seja interpretada corretamente
-        // independente do fuso horário local ao criar o objeto Date.
-        return new Date(dataRef + "T00:00:00").toLocaleDateString("pt-BR", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        });
-      } catch (e) {
-       // console.error("Erro ao formatar dataRef:", e);
-      }
-    }
-    return new Date().toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  }, [filtrosPrincipais.dia, filtrosPrincipais.dataInicio]);
+  // Animação inicial
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
 
-  // Lógica para determinar o estado de exibição do status
-  const getDisplayStatus = () => {
-    const hoje = isHoje(filtros.dataFim || filtros.dia);
-
-    // 1. Prioridade para carregamento ativo (seja inicial ou recarga)
-    if (loading && buscaIniciada) {
-      // Busca em andamento após a primeira interação
-      return {
-        icon: <Loader2 className="text-primary h-4 w-4 animate-spin" />, // Usar cor primária (amarelo)
-        text: "Carregando dados...",
-        tooltipText: "Buscando as informações mais recentes.",
-        twClasses:
-          "bg-primary/10 border-primary/30 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-primary",
-      };
-    }
-    // Estado de "atualizando" do auto-refresh (se o loading principal já terminou)
-    if (statusAtualizacao === "atualizando" && !loading) {
-      return {
-        icon: <RefreshCw className="text-primary h-4 w-4 animate-spin" />,
-        text: "Verificando...", // Texto mais curto para o refresh rápido
-        tooltipText: "Verificando novos dados em tempo real.",
-        twClasses:
-          "bg-primary/10 border-primary/30 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-primary animate-pulse",
-      };
-    }
-
-    // 2. Prioridade para erros
-    if (error) {
-      return {
-        icon: (
-          <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-        ),
-        text: "Falha ao carregar",
-        tooltipText: `Erro: ${error}`, // Mostrar o erro no tooltip
-        twClasses:
-          "bg-red-100/70 border-red-400 text-red-700 dark:bg-red-900/30 dark:border-red-600 dark:text-red-400",
-      };
-    }
-
-    // 3. Após uma busca (buscaIniciada === true) e sem estar carregando ou com erro
-    if (buscaIniciada) {
-      if (semResultados) {
-        return {
-          icon: (
-            <SearchX className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-          ),
-          text: "Nenhum Dado",
-          tooltipText: "Nenhum dado encontrado para os filtros aplicados.",
-          twClasses:
-            "bg-orange-100/70 border-orange-400 text-orange-700 dark:bg-orange-900/30 dark:border-orange-600 dark:text-orange-400",
-        };
-      }
-
-      // Se temos dados
-      if (dados.length > 0) {
-        if (hoje) {
-          // Se a data selecionada é HOJE
-          return {
-            icon: (
-              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-            ),
-            text: `Dados atualizados - Última verificação: ${ultimaAtualizacao}`,
-            // O tooltip pode dar mais detalhes sobre a última verificação
-            tooltipText: `Exibindo dados de hoje. ${ultimaAtualizacao ? `Última verificação: ${ultimaAtualizacao}` : "Dados atualizados."}`,
-            twClasses:
-              "bg-green-100/70 border-green-400 text-green-700 dark:bg-green-900/30 dark:border-green-600 dark:text-green-400",
-          };
-        } else {
-          // Se a data selecionada é um DIA PASSADO
-          return {
-            icon: (
-              <CalendarCheck2 className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-            ),
-            text: `Dados de ${formattedDate}`,
-            tooltipText: `Exibindo dados consolidados para ${formattedDate}.`,
-            twClasses:
-              "bg-slate-100/70 border-slate-400 text-slate-700 dark:bg-slate-700/30 dark:border-slate-500 dark:text-slate-400",
-          };
-        }
-      }
-    }
-
-    // 4. Estado inicial, antes da primeira busca (loading já tratado acima se !buscaIniciada)
-    if (!buscaIniciada && !loading) {
-      return {
-        icon: <Info className="h-4 w-4 text-slate-600 dark:text-slate-400" />,
-        text: "Pronto para consulta",
-        tooltipText: "Aplique os filtros para iniciar.",
-        twClasses:
-          "bg-slate-100/70 border-slate-400 text-slate-700 dark:bg-slate-700/30 dark:border-slate-500 dark:text-slate-400",
-      };
-    }
-
-    return null; // Caso padrão: não mostrar nada
-  };
-
-  const displayStatus = getDisplayStatus();
+  // ✅ CONTAINER PRINCIPAL
+  const containerClass = isFullscreen 
+    ? "fixed inset-0 z-50 bg-gradient-to-br from-slate-900 via-yellow-900 to-slate-800"
+    : "min-h-screen bg-gradient-to-br from-slate-900 via-yellow-900 to-slate-800 text-gray-200";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-black">
-      {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
-      >
-        <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(-1)}
-                className="gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Voltar
-              </Button>
-              <div className="h-8 w-px bg-gray-300 dark:bg-gray-700" />
-
-              <img src={logo} alt="Logo da Empresa" className="h-14 w-14" />
-              <h1 className="bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-xl font-semibold text-transparent dark:from-white dark:to-gray-400">
-                Dashboard de Viagens
-              </h1>
-            </div>
-
-            {/* Status de atualização */}
-            {/* Status de atualização REFEITO */}
-            <AnimatePresence mode="wait">
-              {/* Renderiza o displayStatus apenas se ele não for null */}
-              {displayStatus && (
-                <motion.div
-                  key={
-                    displayStatus.text +
-                    (displayStatus.icon?.type?.toString() || "")
-                  } // Chave um pouco mais robusta
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <TooltipProvider delayDuration={100}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge
-                          className={cn(
-                            "flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium tracking-tight", // Estrutura e espaçamento base + borda explícita
-                            "transition-colors duration-300", // Suaviza transição de cor
-                            displayStatus.twClasses, // Cores dinâmicas (bg, border-color, text-color)
-                          )}
-                        >
-                          {displayStatus.icon}
-                          <span>{displayStatus.text}</span>
-                        </Badge>
-                      </TooltipTrigger>
-                      {displayStatus.tooltipText && (
-                        <TooltipContent>
-                          <p>{displayStatus.tooltipText}</p>
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  </TooltipProvider>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </motion.header>
-
-      {/* Main Content */}
-      <main className="mx-auto max-w-screen-2xl space-y-6 p-4 md:p-6 lg:p-8">
-        {/* Filtros */}
+    <div className={containerClass}>
+      <div className={`${isFullscreen ? 'h-full' : 'container mx-auto px-4 py-6'} flex flex-col`}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
+          transition={{ duration: 0.8 }}
+          className="flex flex-col h-full"
         >
-          <Card className="mb-8 border-0 bg-white/90 shadow-lg backdrop-blur dark:bg-gray-900/90">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5 text-yellow-500" />
-                Filtros de Pesquisa
-              </CardTitle>
-              <CardDescription>
-                Configure os parâmetros para análise das viagens
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FiltrosDashboard onFilter={handleSubmitFiltros} />
+          
+          {/* ✅ HEADER PRINCIPAL */}
+          {!isFullscreen && (
+            <div className="mb-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate('/home')}
+                  className="text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Voltar aos Departamentos
+                </Button>
+                
+                <div>
+                  <h1 className="text-3xl font-bold text-yellow-400">Dashboard Apresentação</h1>
+                  <p className="text-gray-400">Sistema de Slides Executivos - Departamento Pessoal</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Calendar className="h-4 w-4 text-yellow-500" />
+                    <span className="text-sm text-yellow-300">
+                      Dados de {periodoAtual.mes}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button 
+                  onClick={() => navigate('/departments/pessoal')}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Dept. Pessoal
+                </Button>
+
+                <Button 
+                  onClick={() => navigate('/departments/legal')}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Dept. Jurídico
+                </Button>
+
+                <Button 
+                  onClick={toggleFullscreen}
+                  className="bg-gray-600 hover:bg-gray-700 text-white"
+                >
+                  <Maximize2 className="h-4 w-4 mr-2" />
+                  Tela Cheia
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ✅ BARRA DE STATUS */}
+          {!isFullscreen && (
+            <Card className="mb-6 bg-gray-800/50 border-gray-700">
+              <CardContent className="p-3">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-gray-400">Sistema Online</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Database className="h-4 w-4 text-blue-400" />
+                      <span className="text-sm text-gray-400">Oracle Conectado</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-green-400" />
+                      <span className="text-sm text-gray-400">Cache Ativo</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-yellow-400" />
+                      <span className="text-sm text-gray-400">
+                        Período: {periodoAtual.ano}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-green-800/50 text-green-300">
+                      Tempo Real
+                    </Badge>
+                    <Badge variant="secondary" className="bg-blue-800/50 text-blue-300">
+                      Sincronizado
+                    </Badge>
+                    <Badge variant="secondary" className="bg-yellow-800/50 text-yellow-300">
+                      {periodoAtual.ano}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ✅ CONTROLES DE NAVEGAÇÃO */}
+          <Card className={`${isFullscreen ? 'mb-2' : 'mb-6'} bg-gray-800/50 border-gray-700`}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                
+                {/* Navegação */}
+                <div className="flex items-center gap-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={goToPrevious}
+                    disabled={currentSlide === 0}
+                    className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-1" />
+                    Anterior
+                  </Button>
+                  
+                  <Badge variant="outline" className="px-3 py-1 bg-yellow-800/50 text-yellow-300">
+                    {currentSlide + 1} / {slidesConfig.length}
+                  </Badge>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={goToNext}
+                    disabled={currentSlide === slidesConfig.length - 1}
+                    className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600"
+                  >
+                    Próximo
+                    <ArrowRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
+
+                {/* Título do slide atual */}
+                <div className="text-center flex-1 mx-8">
+                  <h2 className="text-lg lg:text-xl font-bold text-yellow-400">
+                    {currentSlideConfig.title}
+                  </h2>
+                  <p className="text-sm text-gray-400">
+                    {currentSlideConfig.subtitle}
+                  </p>
+                </div>
+
+                {/* Controles */}
+                <div className="flex items-center gap-2">
+                  {/* Meta Control */}
+                  {showMetaInput ? (
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="meta" className="text-xs text-gray-400">
+                        {currentSlideConfig.meta?.metaLabel || 'Meta'}:
+                      </Label>
+                      <Input
+                        id="meta"
+                        type="number"
+                        value={tempMeta}
+                        onChange={(e) => setTempMeta(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleMetaSubmit()}
+                        className="w-20 h-8 text-xs bg-gray-700 border-gray-600 text-white"
+                        min="1"
+                        placeholder={slideMetas[currentSlideConfig.id].toString()}
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleMetaSubmit}
+                        className="h-8 px-2 text-xs bg-green-600 hover:bg-green-700"
+                      >
+                        OK
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setShowMetaInput(false);
+                          setTempMeta('');
+                        }}
+                        className="h-8 px-2 text-xs bg-gray-700 border-gray-600"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setShowMetaInput(true);
+                        setTempMeta(slideMetas[currentSlideConfig.id].toString());
+                      }}
+                      className="flex items-center gap-1 text-xs bg-gray-700 hover:bg-gray-600 border-gray-600"
+                    >
+                      <Target className="w-3 h-3" />
+                      Meta: {slideMetas[currentSlideConfig.id]}
+                    </Button>
+                  )}
+                  
+                  {/* Auto-play */}
+                  <Button
+                    size="sm"
+                    variant={isAutoPlaying ? "default" : "outline"}
+                    onClick={toggleAutoPlay}
+                    className={`flex items-center gap-1 text-xs ${
+                      isAutoPlaying 
+                        ? 'bg-green-600 hover:bg-green-700 text-white' 
+                        : 'bg-gray-700 hover:bg-gray-600 border-gray-600'
+                    }`}
+                  >
+                    {isAutoPlaying ? (
+                      <>
+                        <Pause className="w-3 h-3" />
+                        Pausar
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3 h-3" />
+                        Auto
+                      </>
+                    )}
+                  </Button>
+
+                  {/* Fullscreen */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={toggleFullscreen}
+                    className="flex items-center gap-1 text-xs bg-gray-700 hover:bg-gray-600 border-gray-600"
+                  >
+                    {isFullscreen ? (
+                      <>
+                        <Minimize2 className="w-3 h-3" />
+                        Sair
+                      </>
+                    ) : (
+                      <>
+                        <Maximize2 className="w-3 h-3" />
+                        Tela Cheia
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </motion.div>
 
-        {/* Stats Cards */}
-        {dados.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4"
-          >
-            <Card className="border-0 bg-gradient-to-br from-blue-50 to-blue-100 shadow-md dark:from-blue-900/20 dark:to-blue-800/20">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                      Total de Viagens
-                    </p>
-                    <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">
-                      {totaisViagens.total}
-                    </p>
-                  </div>
-                  <Bus className="h-8 w-8 text-blue-500 opacity-50" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 bg-gradient-to-br from-green-50 to-green-100 shadow-md dark:from-green-900/20 dark:to-green-800/20">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                      Realizadas
-                    </p>
-                    <p className="text-3xl font-bold text-green-900 dark:text-green-100">
-                      {totaisViagens.analisadas}
-                    </p>
-                  </div>
-                  <CheckCircle2 className="h-8 w-8 text-green-500 opacity-50" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 bg-gradient-to-br from-amber-50 to-amber-100 shadow-md dark:from-amber-900/20 dark:to-amber-800/20">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
-                      Pendentes
-                    </p>
-                    <p className="text-3xl font-bold text-amber-900 dark:text-amber-100">
-                      {totaisViagens.pendentes}
-                    </p>
-                  </div>
-                  <Clock className="h-8 w-8 text-amber-500 opacity-50" />
-                </div>
-              </CardContent>
-            </Card>
-            {/* NOVO CARD: Data da Consulta */}
-            <Card className="border-0 bg-gradient-to-br from-slate-100 to-slate-200 shadow-lg transition-shadow hover:shadow-xl dark:from-slate-800/30 dark:to-slate-700/30">
-              <CardContent className="p-5 md:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Data da Consulta
-                    </p>
-                    <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-                      {formattedDate}
-                    </p>
-                  </div>
-                  <CalendarDays className="h-10 w-10 text-slate-600 opacity-60 dark:text-slate-400" />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Content States */}
-        <AnimatePresence mode="wait">
-          {loading ? (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="space-y-4"
-            >
-              <Card className="border-0 shadow-lg">
-                <CardContent className="p-8">
-                  <div className="flex flex-col items-center justify-center space-y-4">
-                    <RefreshCw className="h-8 w-8 animate-spin text-yellow-500" />
-                    <p className="text-lg font-medium">Carregando dados...</p>
-                    <p className="text-sm text-gray-500">
-                      Por favor, aguarde enquanto processamos sua solicitação
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ) : error ? (
-            <motion.div
-              key="error"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            </motion.div>
-          ) : semResultados ? (
-            <motion.div
-              key="no-results"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <Card className="border-0 shadow-lg">
-                <CardContent className="p-8">
-                  <div className="flex flex-col items-center justify-center space-y-4">
-                    <Search className="h-12 w-12 text-gray-400" />
-                    <h3 className="text-lg font-semibold">
-                      Nenhum resultado encontrado
-                    </h3>
-                    <p className="max-w-md text-center text-sm text-gray-500">
-                      Não foram encontrados dados com os filtros aplicados.
-                      Tente ajustar os critérios de busca.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ) : dados.length > 0 ? (
-            <motion.div
-              key="data"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Card className="border-0 bg-white/90 shadow-xl backdrop-blur dark:bg-gray-900/90">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-yellow-500" />
-                    Análise de Cumprimento
-                  </CardTitle>
-                  <CardDescription>
-                    Visualização detalhada do status das viagens
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <BarChart
-                    data={dados}
-                    corBarra={corBarra}
-                    filtrosIniciaisDetalhados={filtrosDetalhados} // Nova prop
-                  />
-                </CardContent>
-              </Card>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="initial"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <Card className="border-0 shadow-lg">
-                <CardContent className="p-8">
-                  <div className="flex flex-col items-center justify-center space-y-4">
-                    <TrendingUp className="h-12 w-12 text-gray-400" />
-                    <h3 className="text-lg font-semibold">
-                      Pronto para começar
-                    </h3>
-                    <p className="max-w-md text-center text-sm text-gray-500">
-                      Utilize os filtros acima para consultar os dados de
-                      viagens
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+          {/* ✅ BREADCRUMB */}
+          {!isFullscreen && (
+            <div className="mb-4 flex items-center gap-2 text-sm text-gray-400">
+              <span>Departamentos</span>
+              <span>›</span>
+              <span>Pessoal</span>
+              <span>›</span>
+              <span className="text-yellow-400">Dashboard Apresentação</span>
+              <span>›</span>
+              <span className="text-blue-400">{currentSlideConfig.title}</span>
+              <span>›</span>
+              <span className="text-green-400">{periodoAtual.ano}</span>
+            </div>
           )}
-        </AnimatePresence>
-      </main>
+
+          {/* ✅ CONTEÚDO DO SLIDE */}
+          <div className="flex-1 min-h-0">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0, x: 100 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -100 }}
+                transition={{ duration: 0.3 }}
+                className="h-full"
+              >
+                <CurrentSlideComponent
+                  meta={slideMetas[currentSlideConfig.id]}
+                  onMetaChange={(newMeta) => updateSlideMeta(currentSlideConfig.id, newMeta)}
+                  isActive={true}
+                  slideNumber={currentSlide + 1}
+                  totalSlides={slidesConfig.length}
+                  onPrevious={goToPrevious}
+                  onNext={goToNext}
+                  onToggleAutoPlay={toggleAutoPlay}
+                  isAutoPlaying={isAutoPlaying}
+                />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* ✅ INDICADORES DE SLIDE */}
+          <div className={`${isFullscreen ? 'fixed bottom-4' : 'mt-4'} left-1/2 transform -translate-x-1/2 z-50`}>
+            <Card className="bg-gray-800/80 border-gray-700">
+              <CardContent className="p-3">
+                <div className="flex gap-2">
+                  {slidesConfig.map((slide, index) => (
+                    <button
+                      key={slide.id}
+                      onClick={() => goToSlide(index)}
+                      className={`w-3 h-3 rounded-full transition-all ${
+                        index === currentSlide 
+                          ? 'bg-yellow-400 scale-125' 
+                          : 'bg-gray-500 hover:bg-gray-400'
+                      }`}
+                      title={slide.title}
+                      aria-label={`Ir para slide ${index + 1}: ${slide.title}`}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ✅ FOOTER COM AÇÕES RÁPIDAS */}
+          {!isFullscreen && (
+            <Card className="mt-6 bg-gray-800/30 border-gray-700">
+              <CardContent className="p-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-gray-400">Ações Rápidas:</span>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate('/departments/pessoal/dashboard')}
+                      className="text-yellow-400 hover:bg-yellow-900/20 hover:text-yellow-300"
+                    >
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Dashboard Pessoal
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate('/departments/pessoal/funcionarios')}
+                      className="text-blue-400 hover:bg-blue-900/20 hover:text-blue-300"
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      Funcionários
+                    </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate('/departments/pessoal/estatisticas')}
+                      className="text-purple-400 hover:bg-purple-900/20 hover:text-purple-300"
+                    >
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      Estatísticas
+                    </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleAutoPlay}
+                      className="text-green-400 hover:bg-green-900/20 hover:text-green-300"
+                    >
+                      {isAutoPlaying ? (
+                        <>
+                          <Pause className="h-4 w-4 mr-2" />
+                          Pausar Apresentação
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-4 w-4 mr-2" />
+                          Iniciar Apresentação
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <Calendar className="h-3 w-3" />
+                      <span>Período: {periodoAtual.mes}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <Clock className="h-3 w-3" />
+                      <span>Atualizado: {new Date().toLocaleString('pt-BR')}</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      v2.3.0
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ✅ INSTRUÇÕES DE TECLADO 
+            {isFullscreen && (
+            <div className="fixed top-4 right-4 z-50">
+              <Card className="bg-gray-800/80 border-gray-700">
+                <CardContent className="p-3">
+                  <div className="text-white text-xs space-y-1">
+                    <div>← → Navegar slides</div>
+                    <div>Espaço: Próximo slide</div>
+                    <div>Esc: Sair da tela cheia</div>
+                    <div>Ctrl+F: Alternar tela cheia</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          
+          */}
+        
+        </motion.div>
+      </div>
     </div>
   );
 }

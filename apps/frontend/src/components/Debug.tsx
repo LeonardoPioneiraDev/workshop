@@ -1,6 +1,6 @@
 // src/components/Debug.tsx
 import React, { useState } from 'react';
-import { api } from '../services/api';
+import { apiClient as api } from '@/services/api/client';
 
 export const DebugComponent: React.FC = () => {
   const [dia, setDia] = useState('2025-05-07');
