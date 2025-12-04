@@ -1,0 +1,81 @@
+name: Jira Integration
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+jobs:
+  update-jira:
+    runs-on: ubuntu-latest
+    if: contains(github.ref_name, '-') || contains(github.event.pull_request.head.ref, '-')
+    
+    steps:
+      - name: Extract Jira Issue Key
+        id: extract
+        run: |
+          # Extrai o código da issue do nome do branch (ex: PROJ-123-feature)
+          BRANCH="${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}"
+          ISSUE=$(echo "$BRANCH" | grep -oE '[A-Z]+-[0-9]+' | head -1)
+          echo "issue=$ISSUE" >> $GITHUB_OUTPUT
+          echo "Jira Issue: $ISSUE"
+
+      - name: Login to Jira
+        if: steps.extract.outputs.issue != ''
+        uses: atlassian/gajira-login@v3
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+
+      - name: Transition to In Progress (on push)
+        if: steps.extract.outputs.issue != '' && github.event_name == 'push'
+        uses: atlassian/gajira-transition@v3
+        with:
+          issue: ${{ steps.extract.outputs.issue }}
+          transition: "In Progress"
+        continue-on-error: true
+
+      - name: Transition to In Review (on PR opened)
+        if: steps.extract.outputs.issue != '' && github.event_name == 'pull_request' && github.event.action == 'opened'
+        uses: atlassian/gajira-transition@v3
+        with:
+          issue: ${{ steps.extract.outputs.issue }}
+          transition: "In Review"
+        continue-on-error: true
+
+      - name: Transition to Done (on PR merged)
+        if: steps.extract.outputs.issue != '' && github.event_name == 'pull_request' && github.event.pull_request.merged == true
+        uses: atlassian/gajira-transition@v3
+        with:
+          issue: ${{ steps.extract.outputs.issue }}
+          transition: "Done"
+        continue-on-error: true
+
+      - name: Add Comment with Commit Info
+        if: steps.extract.outputs.issue != '' && github.event_name == 'push'
+        uses: atlassian/gajira-comment@v3
+        with:
+          issue: ${{ steps.extract.outputs.issue }}
+          comment: |
+            🔄 Commit pushed to branch `${{ github.ref_name }}`
+            
+            **Commit:** ${{ github.event.head_commit.message }}
+            **Author:** ${{ github.event.head_commit.author.name }}
+            **Link:** ${{ github.event.head_commit.url }}
+        continue-on-error: true
+
+      - name: Add Comment with PR Info
+        if: steps.extract.outputs.issue != '' && github.event_name == 'pull_request' && github.event.action == 'opened'
+        uses: atlassian/gajira-comment@v3
+        with:
+          issue: ${{ steps.extract.outputs.issue }}
+          comment: |
+            🔀 Pull Request criado
+            
+            **Título:** ${{ github.event.pull_request.title }}
+            **Autor:** ${{ github.event.pull_request.user.login }}
+            **Link:** ${{ github.event.pull_request.html_url }}
+        continue-on-error: true
