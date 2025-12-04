@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Scripts de bibliotecas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    
+    <!-- Título e Descrição -->
+    <title>Workshop Operacional - Viação Pioneira Ltda</title>
+    <meta name="description" content="Sistema de gestão operacional da Viação Pioneira. Dashboard executivo para monitoramento de frota, financeiro, manutenção, RH, logística e combustível." />
+    <meta name="keywords" content="viação pioneira, transporte rodoviário, gestão de frota, dashboard executivo, workshop operacional" />
+    <meta name="author" content="Viação Pioneira Ltda" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://workshop.vpioneira.com.br/" />
+    <meta property="og:title" content="Workshop Operacional - Viação Pioneira Ltda" />
+    <meta property="og:description" content="Sistema de gestão operacional para monitoramento e controle de todos os departamentos da Viação Pioneira." />
+    <meta property="og:image" content="./assets/logo.png" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content="Viação Pioneira Workshop" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://workshop.vpioneira.com.br/" />
+    <meta property="twitter:title" content="Workshop Operacional - Viação Pioneira Ltda" />
+    <meta property="twitter:description" content="Sistema de gestão operacional para monitoramento e controle de todos os departamentos da Viação Pioneira." />
+    <meta property="twitter:image" content="./assets/logo.png" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/logo.png" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Tema e Cores -->
+    <meta name="theme-color" content="#eab308" />
+    <meta name="msapplication-TileColor" content="#eab308" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- ✅ CORREÇÃO: Removidas as metas de segurança problemáticas -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    
+    <!-- PWA -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Workshop Pioneira" />
+    
+    <!-- Robots -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://workshop.vpioneira.com.br/" />
+    
+    <!-- DNS Prefetch -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//api.workshop.vpioneira.com.br" />
+    
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Workshop Operacional - Viação Pioneira",
+      "description": "Sistema de gestão operacional para monitoramento de frota e departamentos",
+      "url": "https://workshop.vpioneira.com.br",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "BRL"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "Viação Pioneira Ltda",
+        "url": "https://vpioneira.com.br"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Viação Pioneira Ltda",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://workshop.vpioneira.com.br/logo.png"
+        }
+      }
+    }
+    </script>
+    
+    <!-- Estilos inline críticos para evitar FOUC -->
+    <style>
+      /* Reset básico e loading */
+      * {
+        box-sizing: border-box;
+      }
+      
+      html, body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+        background: linear-gradient(135deg, #0f172a 0%, #ca8a04 50%, #1e293b 100%);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+      
+      #root {
+        min-height: 100vh;
+        width: 100%;
+      }
+      
+      /* Loading spinner */
+      .loading-spinner {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 50px;
+        height: 50px;
+        border: 4px solid #eab308;
+        border-top: 4px solid transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        z-index: 9999;
+      }
+      
+      @keyframes spin {
+        0% { transform: translate(-50%, -50%) rotate(0deg); }
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+      }
+      
+      /* Ocultar spinner quando app carrega */
+      .app-loaded .loading-spinner {
+        display: none;
+      }
+      
+      /* Prevenção de FOUC */
+      .no-js {
+        background: #0f172a;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        text-align: center;
+        font-size: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Fallback para JavaScript desabilitado -->
+    <noscript>
+      <div class="no-js">
+        <div>
+          <h1>Workshop Operacional - Viação Pioneira</h1>
+          <p>Este sistema requer JavaScript para funcionar.</p>
+          <p>Por favor, habilite o JavaScript em seu navegador e recarregue a página.</p>
+        </div>
+      </div>
+    </noscript>
+    
+    <!-- Loading spinner -->
+    <div class="loading-spinner" id="loading-spinner"></div>
+    
+    <!-- App root -->
+    <div id="root"></div>
+    
+    <!-- Scripts -->
+    <!-- Configuração dinâmica (permite alterar API sem rebuild) -->
+    <script src="/config.js"></script>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Script para remover loading -->
+    <script>
+      // Remove loading spinner quando DOM estiver pronto
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          const spinner = document.getElementById('loading-spinner');
+          if (spinner) {
+            spinner.style.opacity = '0';
+            setTimeout(() => spinner.remove(), 300);
+          }
+          document.body.classList.add('app-loaded');
+        }, 500);
+      });
+      
+      // Service Worker registration (somente fora de localhost)
+      if ('serviceWorker' in navigator && !['localhost','127.0.0.1'].includes(location.hostname)) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+              console.log('SW registered: ', registration);
+            })
+            .catch(function(registrationError) {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>

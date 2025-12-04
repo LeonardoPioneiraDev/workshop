@@ -1,0 +1,31 @@
+  176:   const [periodoDescricao, setPeriodoDescricao] = useState('');
+  177:   const [anosDisponiveis, setAnosDisponiveis] = useState<string[]>(['Todos']);
+  178: 
+  179:   // Função para mapear locais para cidades (apenas as 4 principais)
+  180:   const mapearCidade = (local: string) => {
+  181:     if (!local) return 'Outros';
+  182: 
+  183:     const localUpper = local.toUpperCase();
+  184: 
+  185:     // Mapeamento para as 4 cidades principais
+  186:     if (localUpper.includes('GAMA') || localUpper.includes('TERMINAL BRT GAMA')) {
+  187:       return 'Gama';
+  188:     }
+  189: 
+  190:     if (localUpper.includes('PARANOÁ') ||
+  191:       localUpper.includes('TERMINAL RODOVIARIO DO PARANOA') ||
+  192:       localUpper.includes('TERMINAL DE SÃO SEBASTIÃO')) {
+  193:       return 'Paranoá';
+  194:     }
+  195: 
+  196:     if (localUpper.includes('SÃO SEBASTIÃO') && !localUpper.includes('TERMINAL DE SÃO SEBASTIÃO')) {
+  197:       return 'São Sebastião';
+  198:     }
+  199: 
+  200:     if (localUpper.includes('SANTA MARIA')) {
+  201:       return 'Santa Maria';
+  202:     }
+  203: 
+  204:     return 'Outros';
+  205:   };
+  206: 

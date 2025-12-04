@@ -1,0 +1,237 @@
+/* apps/frontend/src/index.css - VERSÃO OTIMIZADA */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Reset básico */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  line-height: 1.6;
+  color: #ffffff;
+  background: #000000;
+  overflow-x: hidden;
+}
+
+/* Classes customizadas */
+.bg-grid-pattern {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 15px 15px;
+}
+
+/* ✅ ANIMAÇÕES OTIMIZADAS PARA GRÁFICOS */
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* ✅ FADE IN PARA GRÁFICOS */
+@keyframes chartFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chart-fade-in {
+  animation: chartFadeIn 0.6s ease-out;
+}
+
+/* ✅ LOADING PARA GRÁFICOS */
+@keyframes chartLoading {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.chart-loading {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #374151;
+  border-top: 4px solid #3B82F6;
+  border-radius: 50%;
+  animation: chartLoading 1s linear infinite;
+}
+
+/* ✅ OTIMIZAÇÕES PARA GRÁFICOS */
+canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* ✅ PREVENIR CONFLITOS DE RE-RENDER */
+.chart-container {
+  contain: layout style paint;
+  will-change: auto;
+}
+
+/* ✅ TOOLTIP CUSTOMIZADO */
+.recharts-tooltip-wrapper {
+  outline: none !important;
+}
+
+.recharts-tooltip-content {
+  border-radius: 12px !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* ✅ CORRIGIR ERRO DE HYDRATION - DIV DENTRO DE P */
+.recharts-tooltip-label {
+  display: block !important;
+}
+
+.recharts-tooltip-label p {
+  display: inline !important;
+}
+
+/* ✅ SMOOTH SCROLLING */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ✅ PERFORMANCE */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ✅ REDUZIR ANIMAÇÕES SE PREFERIDO */
+@media (prefers-reduced-motion: reduce) {
+  .animate-blob,
+  .chart-fade-in {
+    animation: none;
+  }
+  
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ✅ RESPONSIVIDADE PARA GRÁFICOS */
+@media (max-width: 768px) {
+  .chart-container {
+    padding: 8px;
+  }
+  
+  canvas {
+    max-height: 300px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .chart-container {
+    padding: 16px;
+  }
+}
+
+/* ✅ DARK MODE ESPECÍFICO PARA GRÁFICOS */
+@media (prefers-color-scheme: dark) {
+  .chart-container {
+    background: rgba(17, 24, 39, 0.8);
+  }
+}
+
+/* ✅ ESTILOS PARA FULLSCREEN */
+.fullscreen-chart {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  background: #0f172a;
+}
+
+.fullscreen-chart canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ✅ LOADING STATES MELHORADOS */
+.chart-skeleton {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ✅ HOVER EFFECTS PARA GRÁFICOS */
+.chart-hover-effect {
+  transition: all 0.3s ease;
+}
+
+.chart-hover-effect:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* ✅ FOCUS STATES PARA ACESSIBILIDADE */
+.chart-container:focus-within {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* ✅ PRINT STYLES PARA GRÁFICOS */
+@media print {
+  .chart-container {
+    break-inside: avoid;
+    background: white !important;
+    color: black !important;
+  }
+  
+  canvas {
+    max-height: none !important;
+  }
+}
+/*  CUSTOMIZAÇÃO: lg:h-screen com 90vh ao invés de 100vh */
+@media (min-width: 1024px) {
+  .lg\:h-screen {
+    height: 90vh;
+  }
+}
