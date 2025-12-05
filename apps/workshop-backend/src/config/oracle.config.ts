@@ -14,7 +14,7 @@ export default registerAs('oracle', () => ({
   poolMin: parseInt(process.env.ORACLE_POOL_MIN, 10) || 5,
   poolMax: parseInt(process.env.ORACLE_POOL_MAX, 10) || 50,
   poolIncrement: parseInt(process.env.ORACLE_POOL_INCREMENT, 10) || 2,
-  poolTimeout: parseInt(process.env.ORACLE_POOL_TIMEOUT, 10) || 300000,
+  poolTimeout: parseInt(process.env.ORACLE_POOL_TIMEOUT, 10) || 9000000,
   connectTimeout: parseInt(process.env.ORACLE_CONNECT_TIMEOUT, 10) || 180000,
   
   // Query settings

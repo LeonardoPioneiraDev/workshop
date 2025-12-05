@@ -1,147 +1,250 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { getDeptPessoalAtual } from '@/services/departments/pessoal/deptPessoalApi';
+import React, { useEffect, useState } from 'react';
+import { apiClient } from '@/services/api/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar, LabelList } from 'recharts';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import logo from '../../../assets/logo.png';
 
-const pad = 'p-6 sm:p-8 md:p-10';
-
-function Header() {
-  return (
-    <div className="text-center mb-4">
-      <div className="text-blue-700 text-xl font-bold tracking-wide">Pioneira</div>
-      <div className="text-black text-lg font-semibold">Depes - Funcionários  Ativos</div>
-    </div>
-  );
+interface CategoriaData {
+  referencia_date: string;
+  categoria: string;
+  total: number;
 }
 
-function Bar3D({ label, value, color, max = 3400 }: { label: string; value: number; color: string; max?: number }) {
-  const h = Math.max(8, Math.round((value / max) * 220));
-  return (
-    <div className="flex flex-col items-center justify-end h-[260px] w-24 mx-2 relative">
-      <div className="text-xs text-white bg-black/70 px-2 py-0.5 rounded absolute -top-4">
-        {value.toLocaleString('pt-BR')}
+interface MediaData {
+  categoria: string;
+  media: number;
+}
+
+interface BackendResponse {
+  rows: CategoriaData[];
+  medias: MediaData[];
+  lastSync: string | null;
+}
+
+interface DeptCounts {
+  trafego: number;
+  manutencao: number;
+  administracao: number;
+  aprendiz: number;
+  total: number;
+}
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-800/80 backdrop-blur-sm text-white p-3 rounded-lg border border-slate-700 shadow-lg">
+        <p className="font-bold text-base text-amber-400">{label}</p>
+        <p className="text-sm mt-1">{`Total: ${payload[0].value}`}</p>
       </div>
-      <div
-        className="w-14 rounded-sm shadow-lg"
-        style={{
-          height: h,
-          background: `linear-gradient(145deg, ${color}, #0a0a0a 120%)`,
-          boxShadow: `inset 0 0 8px rgba(255,255,255,0.1), 6px 6px 10px rgba(0,0,0,0.4)`,
-        }}
-      />
-      <div className="text-xs mt-2 text-center leading-tight">{label}</div>
-    </div>
-  );
-}
+    );
+  }
+  return null;
+};
+
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return '—';
+  try {
+    // Remover a hora, deixar apenas a data
+    const datePart = dateString.split('T')[0];
+    const [year, month, day] = datePart.split('-');
+    return `${day}/${month}/${year}`;
+  } catch {
+    return dateString;
+  }
+};
 
 export default function DepesFuncionariosAtivosSlide() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any[]>([]);
+  const [dadosAtual, setDadosAtual] = useState<DeptCounts>({ trafego: 0, manutencao: 0, administracao: 0, aprendiz: 0, total: 0 });
+  const [mesAtualLabel, setMesAtualLabel] = useState('DEZ 25');
+  const [mesAnteriorLabel, setMesAnteriorLabel] = useState('NOV 25');
+  const [lastSync, setLastSync] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         setLoading(true);
-        console.log('[DEPES ATIVOS] fetching...');
-        const rows = await getDeptPessoalAtual();
-        console.log('[DEPES ATIVOS] payload size:', Array.isArray(rows) ? rows.length : 'n/a');
-        if (mounted) setData(Array.isArray(rows) ? rows : []);
+        const data = await apiClient.get<BackendResponse>(
+          '/dept-pessoal/ativos-categoria'
+        );
+
+        console.log('[DEPES ATIVOS] Resposta completa:', JSON.stringify(data, null, 2));
+        console.log('[DEPES ATIVOS] data.rows:', data.rows);
+        console.log('[DEPES ATIVOS] data.medias:', data.medias);
+        console.log('[DEPES ATIVOS] Array.isArray(data.rows):', Array.isArray(data.rows));
+
+        if (mounted && data && data.rows && Array.isArray(data.rows)) {
+          const rows: CategoriaData[] = data.rows;
+          const datas = [...new Set(rows.map(r => r.referencia_date))].sort().reverse();
+          const mesAtual = datas[0];
+          const anoPassado = datas[3];
+
+          const dadosMesAtual = rows.filter(r => r.referencia_date === mesAtual);
+          const countsAtual: DeptCounts = {
+            trafego: Number(dadosMesAtual.find(r => r.categoria === 'TRAFEGO')?.total) || 0,
+            manutencao: Number(dadosMesAtual.find(r => r.categoria === 'MANUTENCAO')?.total) || 0,
+            administracao: Number(dadosMesAtual.find(r => r.categoria === 'ADMINISTRACAO')?.total) || 0,
+            aprendiz: Number(dadosMesAtual.find(r => r.categoria === 'JOVEM_APRENDIZ')?.total) || 0,
+            total: 0
+          };
+          countsAtual.total = countsAtual.trafego + countsAtual.manutencao + countsAtual.administracao + countsAtual.aprendiz;
+
+          setDadosAtual(countsAtual);
+          setLastSync(data.lastSync);
+
+          try {
+            const dataObj = new Date(mesAtual);
+            const mes = dataObj.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
+            const ano = dataObj.toLocaleDateString('pt-BR', { year: '2-digit' });
+            setMesAtualLabel(`${mes} ${ano}`);
+
+            // Calcular mês anterior (m1)
+            const dataAnterior = new Date(datas[1]);
+            const mesAnt = dataAnterior.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
+            const anoAnt = dataAnterior.toLocaleDateString('pt-BR', { year: '2-digit' });
+            setMesAnteriorLabel(`${mesAnt} ${anoAnt}`);
+          } catch {
+            setMesAtualLabel('DEZ 25');
+            setMesAnteriorLabel('NOV 25');
+          }
+        } else {
+          console.error('[DEPES ATIVOS] Resposta inválida:', data);
+          if (mounted) setError('Dados não disponíveis. Reinicie o backend.');
+        }
       } catch (e: any) {
-        console.error('[DEPES ATIVOS] error:', e);
-        if (mounted) setError(e?.message || 'Falha ao carregar funcionários');
+        console.error('[DEPES ATIVOS] Erro:', e);
+        if (mounted) setError(e?.message || 'Falha ao carregar. Reinicie o backend.');
       } finally {
         if (mounted) setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
-  const counts = useMemo(() => {
-    const isAtivo = (s: string | null | undefined) => (s || '').toUpperCase() === 'A';
-    const has = (v: any, k: string) => (typeof v === 'string' ? v.toUpperCase().includes(k) : false);
-    const rows = data || [];
-    const ativos = rows.filter((r) => isAtivo(r?.situacao));
-    let aprendiz = 0, manut = 0, admin = 0, trafego = 0;
-    for (const r of ativos) {
-      const funcao = (r?.funcao || '') as string;
-      const area = (r?.area || '') as string;
-      if (has(funcao, 'APREND')) { aprendiz++; continue; }
-      if (has(funcao, 'MANUT')) { manut++; continue; }
-      if (area === 'GESTAO') { admin++; continue; }
-      if (area === 'TRANSPORTE') { trafego++; continue; }
-    }
-    const total = ativos.length;
-    return { trafego, manut, admin, aprendiz, total };
-  }, [data]);
+  const tableRows = [
+    ['Operação', dadosAtual.trafego.toLocaleString('pt-BR'), dadosAtual.trafego.toLocaleString('pt-BR')],
+    ['Manutenção', dadosAtual.manutencao.toLocaleString('pt-BR'), dadosAtual.manutencao.toLocaleString('pt-BR')],
+    ['Administração', dadosAtual.administracao.toLocaleString('pt-BR'), dadosAtual.administracao.toLocaleString('pt-BR')],
+    ['Jovem Aprendiz', dadosAtual.aprendiz.toLocaleString('pt-BR'), dadosAtual.aprendiz.toLocaleString('pt-BR')],
+    ['Total Ativos', dadosAtual.total.toLocaleString('pt-BR'), dadosAtual.total.toLocaleString('pt-BR')],
+  ];
 
-  const bars = [
-    { label: 'Tráfego', value: counts.trafego || 0, color: '#0b3d91' },
-    { label: 'Manutenção', value: counts.manut || 0, color: '#f59e0b' },
-    { label: 'Administração', value: counts.admin || 0, color: '#ef4444' },
-    { label: 'Jovem Aprendiz', value: counts.aprendiz || 0, color: '#06b6d4' },
-    { label: 'Total Ativos', value: counts.total || 0, color: '#0b3d91' },
+  const chartData = [
+    { name: 'Operação', Total: dadosAtual.trafego, fill: '#3b82f6' },
+    { name: 'Manutenção', Total: dadosAtual.manutencao, fill: '#f59e0b' },
+    { name: 'Administração', Total: dadosAtual.administracao, fill: '#10b981' },
+    { name: 'Jovem Aprendiz', Total: dadosAtual.aprendiz, fill: '#8b5cf6' },
+    { name: 'Total Ativos', Total: dadosAtual.total, fill: '#ec4899' },
   ];
 
   return (
-    <div className={`bg-white rounded-lg shadow ${pad}`}>
-      <Header />
-      <div className="mb-6 min-h-[140px]">
-        {error && <div className="text-red-400 text-sm mb-2">{error}</div>}
+    <div className="bg-slate-900 text-slate-200 p-4 sm:p-6 w-full h-auto lg:h-[90vh] flex flex-col gap-4">
+      <header className="text-center flex-shrink-0 relative flex items-center justify-center mb-4 sm:mb-6">
+        <Button
+          onClick={() => navigate(-1)}
+          variant="outline"
+          size="icon"
+          className="absolute left-0 top-1/2 -translate-y-1/2 bg-transparent border-slate-600 hover:bg-slate-700"
+        >
+           <img
+            src={logo}
+            alt="Pioneira Logo"
+            className="h-8 sm:h-12 md:h-16 w-auto object-contain"
+          />
+          
+        </Button>
+        <div className="flex flex-col items-center gap-2">
+         
+          <div>
+            <h1 className="text-xs sm:text-sm font-semibold text-amber-400 tracking-wider mb-0.5 sm:mb-1">PIONEIRA</h1>
+            <h2 className="text-sm sm:text-lg md:text-xl font-bold text-slate-300">DEPES – FUNCIONÁRIOS ATIVOS</h2>
+          </div>
+        </div>
+      </header>
+
+      {error && <div className="bg-red-900/50 border border-red-700 text-red-300 p-3 rounded-lg text-center flex-shrink-0">{error}</div>}
+
+      {/* Tabela sem Card */}
+      <div className="flex-shrink-0 mb-4">
         {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-full" />
+          <div className="space-y-2 py-4">
+            <Skeleton className="h-8 w-full bg-slate-700" />
+            <Skeleton className="h-8 w-full bg-slate-700" />
           </div>
         ) : (
-          <div className="w-full border border-gray-400 rounded-md overflow-hidden">
-            <div className="grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
-              {['Departamento', 'Média 2019', 'Qtde Func.'].map((h, i) => (
-                <div key={i} className="bg-gray-100 border-b border-gray-400 px-3 py-2 text-sm font-semibold text-gray-800">{h}</div>
-              ))}
-              <div className="px-3 py-2 text-sm border-t border-gray-300">Tráfego</div>
-              <div className="px-3 py-2 text-sm border-t border-gray-300">{(2146).toLocaleString('pt-BR')}</div>
-              <div className="px-3 py-2 text-sm border-t border-gray-300">{(bars[0].value).toLocaleString('pt-BR')}</div>
-              <div className="px-3 py-2 text-sm border-t border-gray-300">Manutenção</div>
-              <div className="px-3 py-2 text-sm border-t border-gray-300">{(394).toLocaleString('pt-BR')}</div>
-              <div className="px-3 py-2 text-sm border-t border-gray-300">{(bars[1].value).toLocaleString('pt-BR')}</div>
-              <div className="px-3 py-2 text-sm border-t border-gray-300">Administração</div>
-              <div className="px-3 py-2 text-sm border-t border-gray-300">{(158).toLocaleString('pt-BR')}</div>
-              <div className="px-3 py-2 text-sm border-t border-gray-300">{(bars[2].value).toLocaleString('pt-BR')}</div>
-              <div className="px-3 py-2 text-sm border-t border-gray-300">Jovem Aprendiz</div>
-              <div className="px-3 py-2 text-sm border-t border-gray-300">{(0).toLocaleString('pt-BR')}</div>
-              <div className="px-3 py-2 text-sm border-t border-gray-300">{(bars[3].value).toLocaleString('pt-BR')}</div>
-              <div className="px-3 py-2 text-sm border-t border-gray-300">Total Ativos</div>
-              <div className="px-3 py-2 text-sm border-t border-gray-300">{(2693).toLocaleString('pt-BR')}</div>
-              <div className="px-3 py-2 text-sm border-t border-gray-300">{(bars[4].value).toLocaleString('pt-BR')}</div>
+          <div className="overflow-x-auto rounded-lg border border-slate-600 shadow-lg">
+            <Table className="table-auto">
+              <TableHeader>
+                <TableRow className="bg-gradient-to-r from-slate-700 to-slate-800 border-slate-600">
+                  <TableHead className="text-amber-300 font-bold text-xs sm:text-sm border-r border-slate-600 py-3">Departamento</TableHead>
+                  <TableHead className="text-amber-300 font-bold text-xs sm:text-sm border-r border-slate-600 text-right py-3">Mês {mesAnteriorLabel}</TableHead>
+                  <TableHead className="text-amber-300 font-bold text-xs sm:text-sm text-right py-3">Mês {mesAtualLabel}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tableRows.map((row, idx) => (
+                  <TableRow key={idx} className={`border-slate-600 hover:bg-slate-700/50 transition-colors ${idx === 4 ? 'bg-slate-800/80' : idx % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-800/10'
+                    }`}>
+                    <TableCell className="py-2 sm:py-3 text-xs sm:text-base text-slate-200 border-r border-slate-600 font-medium">{row[0]}</TableCell>
+                    <TableCell className="py-2 sm:py-3 text-xs sm:text-base text-slate-300 border-r border-slate-600 text-right">{row[1]}</TableCell>
+                    <TableCell className={`py-2 sm:py-3 text-xs sm:text-base text-right ${idx === 4 ? 'font-bold text-amber-400 text-base sm:text-lg' : 'font-semibold text-green-400'
+                      }`}>{row[2]}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
+
+      {/* Faixa do Mês */}
+      <div className="flex-shrink-0 text-center mb-4">
+        <div className="inline-block bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg font-bold text-base sm:text-lg shadow-lg">
+          {mesAtualLabel}
+        </div>
+      </div>
+
+      {/* Gráfico sem título no Card */}
+      <Card className="bg-slate-800/50 border-slate-700 min-h-[400px] lg:flex-1 lg:max-h-96 lg:min-h-0 flex flex-col overflow-hidden min-w-0">
+        <CardContent className="h-[350px] lg:flex-1 lg:min-h-0 p-4 min-w-0">
+          {loading ? (
+            <div className="w-full h-full flex items-center justify-center p-4">
+              <Skeleton className="w-full h-full bg-slate-700" />
             </div>
-          </div>
-        )}
-      </div>
-      <div className="relative bg-gradient-to-b from-emerald-50 to-emerald-200 rounded-md border border-emerald-300 p-6 min-h-[320px]">
-        <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-blue-700 text-white text-xs px-3 py-1 rounded shadow">FEV  25</div>
-        {loading ? (
-          <div className="grid grid-cols-5 gap-4 mt-8">
-            <Skeleton className="h-48" />
-            <Skeleton className="h-48" />
-            <Skeleton className="h-48" />
-            <Skeleton className="h-48" />
-            <Skeleton className="h-48" />
-          </div>
-        ) : (
-          <div className="flex items-end justify-between">
-            {bars.map((b) => (
-              <Bar3D key={b.label} label={b.label} value={b.value} color={b.color} />
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="text-center text-xs text-gray-600 mt-3">FONTE: - Globus em: 05032025 14:59:03</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
+                <YAxis stroke="#94a3b8" fontSize={12} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }} />
+                <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} />
+                <Bar dataKey="Total">
+                  {chartData.map((entry, index) => (
+                    <rect key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                  <LabelList dataKey="Total" position="top" fill="#fde68a" fontSize={14} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      <footer className="text-center text-xs text-slate-500 flex-shrink-0 pt-2">
+        FONTE: Globus | Última sincronização: {formatDate(lastSync)}
+      </footer>
     </div>
   );
 }

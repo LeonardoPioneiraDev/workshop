@@ -1,69 +1,35 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { getDeptPessoalTurnover } from '@/services/departments/pessoal/deptPessoalApi';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar, ReferenceLine, LabelList } from 'recharts';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
 
-const pad = 'p-6 sm:p-8 md:p-10';
-
-function Header() {
-  return (
-    <div className="text-center mb-4">
-      <div className="text-blue-700 text-xl font-bold tracking-wide">PIONEIRA</div>
-      <div className="text-blue-700 text-lg font-semibold">DEPES - TOURN OVER</div>
-    </div>
-  );
-}
-
-function SimpleTable({ rows }: { rows: string[][] }) {
-  const headers = ['Mês  Ano', 'Admitido', 'Desligado', 'Custo R.C.T.', 'Custo p R.C.T.'];
-
-  return (
-    <div className="w-full border border-gray-300 rounded-md overflow-hidden bg-white">
-      <div className="grid" style={{ gridTemplateColumns: `repeat(5, minmax(0, 1fr))` }}>
-        {headers.map((h, i) => (
-          <div
-            key={i}
-            className={`px-3 py-2 text-sm font-semibold text-gray-900 border-b border-gray-300 bg-white flex items-center ${i === 0 ? 'text-left' : 'justify-end'}`}
-          >
-            {h}
-          </div>
-        ))}
-        {rows.map((r, idx) => (
-          <React.Fragment key={idx}>
-            {r.map((c, j) => (
-              <div
-                key={j}
-                className={`px-3 py-2 text-sm text-gray-900 border-t border-gray-200 bg-white flex items-center ${j === 0 ? 'text-left' : 'justify-end'}`}
-              >
-                {c}
-              </div>
-            ))}
-          </React.Fragment>
-        ))}
+// Component for a custom tooltip in the chart
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-800/80 backdrop-blur-sm text-white p-3 rounded-lg border border-slate-700 shadow-lg">
+        <p className="font-bold text-base text-amber-400">{label}</p>
+        <p className="text-sm mt-1">{`Custo: ${payload[0].value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}</p>
       </div>
-    </div>
-  );
-}
+    );
+  }
+  return null;
+};
 
-function Bar3DMoney({ label, value, color, max = 320000 }: { label: string; value: number; color: string; max?: number }) {
-  const h = Math.max(8, Math.round((value / max) * 220));
-  return (
-    <div className="flex flex-col items-center justify-end h-[260px] w-24 mx-2 relative">
-      {value > 0 && (
-        <div className="text-xs text-gray-900 bg-white px-2 py-0.5 rounded shadow absolute -top-5">
-          {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-        </div>
-      )}
-      <div
-        className="w-14 rounded-sm"
-        style={{
-          height: h,
-          background: `linear-gradient(145deg, ${color}, #0a0a0a 120%)`,
-          boxShadow: `inset 0 0 8px rgba(255,255,255,0.1), 6px 6px 10px rgba(0,0,0,0.4)`,
-        }}
-      />
-      <div className="text-xs mt-2 text-center leading-tight">{label}</div>
-    </div>
-  );
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return '—';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return dateString;
+  }
+  return date.toLocaleString('pt-BR');
 }
 
 export default function DepesTurnoverSlide() {
@@ -71,115 +37,202 @@ export default function DepesTurnoverSlide() {
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [meta, setMeta] = useState(30000); // Meta padrão R$ 30.000,00
+  const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         setLoading(true);
-        console.log('[DEPES TURNOVER] fetching...');
         const data = await getDeptPessoalTurnover();
-        console.log('[DEPES TURNOVER] payload:', data);
         if (!mounted) return;
         setRows(data.rows || []);
         setLastSync(data.lastSync || null);
       } catch (e: any) {
-        console.error('[DEPES TURNOVER] error:', e);
         if (mounted) setError(e?.message || 'Falha ao carregar turnover');
       } finally {
         if (mounted) setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
-  const formatted = useMemo(() => {
-    // Espera 4 linhas em ordem: m12, m2, m1, m0
-    const labels = (iso: string) => {
+  const chartData = useMemo(() => {
+    const meses = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+    const formatLabel = (iso: string) => {
       const d = new Date(iso);
-      const meses = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
-      return `${meses[d.getMonth()]}  ${String(d.getFullYear()).slice(-2)}`;
+      const year = d.getFullYear();
+      const month = d.getMonth();
+
+      // Backend já retorna as datas corretas (m12, m2, m1, m0)
+      // Não é necessário ajuste manual de ano
+
+      return `${meses[month]}/${String(year).slice(-2)}`;
     };
-    const table = rows.map((r) => ({ mes: labels(r.referencia_date), admitidos: r.admitidos, desligados: r.desligados }));
-    // Custo ainda não disponível no snapshot → apresentar traço
-    const tableRows: string[][] = table.map((t) => [t.mes, String(t.admitidos), String(t.desligados), '—', '—']);
-    return { tableRows };
+
+    // Mapeando dados. Como não temos custo real na API ainda, usaremos 0 ou um valor simulado se necessário.
+    // O original usava 0.
+    return rows.map(r => ({
+      name: formatLabel(r.referencia_date),
+      'Custo': 0, // Placeholder, já que a API não retorna custo
+      admitidos: r.admitidos,
+      desligados: r.desligados,
+    })).reverse(); // Mais recente primeiro (se a API vier ordenada desc, remover reverse. Assumindo ordem cronológica da API)
+    // Nota: AfastadosSlide usa .reverse() no final para inverter a ordem cronológica (API manda antigo -> novo, queremos novo -> antigo na tabela?)
+    // O usuário pediu "mesma ordem" do Afastados que agora é "mais recente primeiro".
+    // Se a API manda [m12, m2, m1, m0] (antigo -> novo), reverse faz [m0, m1, m2, m12] (novo -> antigo).
   }, [rows]);
 
-  const bars = useMemo(() => {
-    // Gráfico exibe apenas Custo R.C.T.; como não temos valor, manteremos zero (ou ocultar rótulo)
-    // Mantemos 0 para não distorcer. Quando houver custo, substituir.
-    const labelFromIso = (iso: string) => {
-      const d = new Date(iso);
-      const meses = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
-      return `${meses[d.getMonth()]}  ${String(d.getFullYear()).slice(-2)}`;
-    };
-    const palette = ['#0b3d91', '#f59e0b', '#ef4444', '#10b981'];
-    return rows.map((r, i) => ({ label: labelFromIso(r.referencia_date), value: 0, color: palette[i % palette.length] }));
-  }, [rows]);
+  const tableRows = useMemo(() => {
+    // Tabela deve mostrar do mais recente para o mais antigo
+    // chartData já está invertido (novo -> antigo) se usarmos .reverse() acima
+    return chartData.map(d => [
+      d.name,
+      String(d.admitidos),
+      String(d.desligados),
+      'Não Informado', // Custo R.C.T.
+      'Não Informado'  // Custo p/ R.C.T.
+    ]);
+  }, [chartData]);
+
 
   return (
-    <div className={`bg-white rounded-lg shadow ${pad}`}>
-      <Header />
-      <div className="mb-6 min-h-[140px]">
-        {error && <div className="text-red-400 text-sm mb-2">{error}</div>}
-        {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-full" />
-          </div>
-        ) : (
-          <SimpleTable rows={formatted.tableRows} />
-        )}
-      </div>
-      <div className="relative bg-gradient-to-b from-emerald-50 to-emerald-200 rounded-md border border-emerald-300 p-6 overflow-hidden min-h-[320px]">
-        {/* Meta */}
-        <div className="absolute left-4 right-16" style={{ top: '75%' }}>
-          <div className="border-t-2 border-red-500" />
+    <div className="bg-slate-900 text-slate-200 p-4 sm:p-6 w-full h-auto lg:h-[90vh] flex flex-col gap-4">
+      <header className="text-center flex-shrink-0 relative flex items-center justify-center">
+        <Button
+          onClick={() => navigate(-1)}
+          variant="outline"
+          size="icon"
+          className="absolute left-0 top-1/2 -translate-y-1/2 bg-transparent border-slate-600 hover:bg-slate-700"
+        >
+          <img
+            src="/assets/logo.png"
+            alt="Pioneira Logo"
+            className="h-8 sm:h-12 md:h-16 w-auto object-contain"
+          />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-amber-400 tracking-wider">PIONEIRA</h1>
+          <h2 className="text-xl font-semibold text-slate-300">DEPES – TURNOVER</h2>
         </div>
-        <div className="absolute left-4 bottom-4 text-xs flex items-center gap-3">
-          <div className="bg-gray-800 text-white text-[11px] px-2 py-0.5 rounded">REALIZADO</div>
-          <div className="text-red-600 text-[11px]">META R$ 30.000,00</div>
-        </div>
-        {/* Icono lateral */}
-        <div className="absolute top-4 right-4 w-14 h-14 rounded-md shadow" style={{ background: 'linear-gradient(135deg,#b45309,#991b1b)' }}>
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="text-[11px] text-white font-bold text-center">
-              BOM
-              <div style={{ lineHeight: 1 }} className="text-red-200">↓</div>
+      </header>
+
+      {error && <div className="bg-red-900/50 border border-red-700 text-red-300 p-3 rounded-lg text-center flex-shrink-0">{error}</div>}
+
+      <Card className="bg-slate-800/50 border-slate-700 flex-shrink-0 max-h-45 overflow-hidden">
+        <CardHeader className="py-3">
+          <CardTitle className="text-amber-500 text-lg">Resumo de Turnover</CardTitle>
+        </CardHeader>
+        <CardContent className="px-2 sm:px-6 pb-4">
+          {loading ? (
+            <div className="space-y-2 py-4">
+              <Skeleton className="h-8 w-full bg-slate-700" />
+              <Skeleton className="h-8 w-full bg-slate-700" />
             </div>
+          ) : tableRows.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table className="table-auto">
+                <TableHeader>
+                  <TableRow className="border-slate-700 hover:bg-slate-800">
+                    {['Mês/Ano', 'Admitido', 'Desligado', 'Custo R.C.T.', 'Custo p/ R.C.T.'].map(h => (
+                      <TableHead key={h} className="text-slate-300 font-bold text-sm">{h}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tableRows.map((row, idx) => (
+                    <TableRow key={idx} className="border-slate-700 hover:bg-slate-700/50">
+                      {row.map((cell, cellIdx) => (
+                        <TableCell key={cellIdx} className={`py-2 text-base ${cellIdx === 0 ? 'font-medium text-slate-200' : 'text-slate-300 text-right'}`}>
+                          {cell}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-slate-500">Sem dados para exibir.</div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-slate-800/50 border-slate-700 min-h-[400px] lg:flex-1 lg:max-h-96 lg:min-h-0 flex flex-col overflow-hidden">
+        <CardHeader className="flex-shrink-0 flex-row items-center justify-between py-4">
+          <CardTitle className="text-amber-500 text-lg">Gráfico de Custo R.C.T.</CardTitle>
+          <div className="flex items-center gap-3 w-full max-w-[12rem]">
+            <Label htmlFor="meta-input" className="text-slate-300 whitespace-nowrap">Meta:</Label>
+            <Input
+              id="meta-input"
+              type="number"
+              value={meta}
+              onChange={(e) => setMeta(Number(e.target.value))}
+              className="bg-slate-900 border-slate-600 text-white w-full"
+            />
           </div>
+        </CardHeader>
+        <CardContent className="h-[300px] lg:flex-1 lg:h-auto lg:min-h-0 p-2">
+          {loading ? (
+            <div className="w-full h-full flex items-center justify-center p-4">
+              <Skeleton className="w-full h-full bg-slate-700" />
+            </div>
+          ) : chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
+                <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={(value) => `R$ ${value}`} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }} />
+                <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '20px' }} />
+                <ReferenceLine
+                  y={meta}
+                  label={{ value: `Meta: ${meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, position: 'right', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }}
+                  stroke="#ef4444"
+                  strokeWidth={3}
+                  strokeDasharray="5 5"
+                />
+                <Bar dataKey="Custo" shape={(props: any) => {
+                  const { x, y, width, height, payload } = props;
+                  const value = payload['Custo'];
+                  const fill = value <= meta ? '#10b981' : '#ef4444'; // Verde se <= meta (bom), vermelho se > meta (ruim)
+                  return <rect x={x} y={y} width={width} height={height} fill={fill} />;
+                }}>
+                  <LabelList
+                    dataKey="Custo"
+                    position="top"
+                    fill="#fde68a"
+                    fontSize={12}
+                    formatter={(value: any) => Number(value) === 0 ? '' : Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="text-center h-full flex items-center justify-center text-slate-500">Gráfico indisponível.</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Legenda explicativa das cores */}
+      <div className="flex justify-center items-center gap-6 flex-shrink-0 pb-2">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-green-500 rounded"></div>
+          <span className="text-xs sm:text-sm text-slate-300">Abaixo da Meta (Bom)</span>
         </div>
-        <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-blue-700 text-white text-xs px-3 py-1 rounded shadow">{rows[2] ? (()=>{const d=new Date(rows[2].referencia_date); const m=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'][d.getMonth()]; return `${m}  ${String(d.getFullYear()).slice(-2)}`;})() : '—'}</div>
-        {loading ? (
-          <div className="grid grid-cols-4 gap-4 mt-8">
-            <Skeleton className="h-48" />
-            <Skeleton className="h-48" />
-            <Skeleton className="h-48" />
-            <Skeleton className="h-48" />
-          </div>
-        ) : (
-          <div className="flex items-end justify-between">
-            {bars.map((b) => (
-              <Bar3DMoney key={b.label} label={b.label} value={b.value} color={b.color} />
-            ))}
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-red-500 rounded"></div>
+          <span className="text-xs sm:text-sm text-slate-300">Acima da Meta (Ruim)</span>
+        </div>
       </div>
-      <div className="text-center text-xs text-gray-600 mt-3">
-        FONTE: - Globus em: {(() => {
-          if (!lastSync) return '—';
-          const t = Date.parse(lastSync as string);
-          if (Number.isNaN(t)) return String(lastSync);
-          const d = new Date(t); const pad=(n:number)=> String(n).padStart(2,'0');
-          return `${pad(d.getDate())}${pad(d.getMonth()+1)}${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-        })()}
-      </div>
+
+      <footer className="text-center text-xs text-slate-500 flex-shrink-0 pt-2">
+        FONTE: Globus | Última sincronização: {formatDate(lastSync)}
+      </footer>
     </div>
   );
 }

@@ -12,6 +12,28 @@ Este documento contém instruções para agentes de IA ajudarem no desenvolvimen
 - **Board**: https://pioneirasuporte.atlassian.net/jira/software/projects/WV/boards/42
 - **Responsável**: Leonardo Lopes Borges (leonardolopes@vpioneira.com.br)
 
+### 🔐 Credenciais Jira API (Para Agentes IA)
+
+**⚠️ IMPORTANTE**: Use estas credenciais para criar issues automaticamente via API
+
+```bash
+JIRA_URL=https://pioneirasuporte.atlassian.net
+JIRA_EMAIL=leonardolopes@vpioneira.com.br
+JIRA_PROJECT_KEY=WV
+JIRA_API_TOKEN=[SOLICITAR AO USUÁRIO NA PRIMEIRA VEZ]
+```
+
+**Como obter o API Token:**
+1. Acesse: https://id.atlassian.com/manage-profile/security/api-tokens
+2. Clique em "Create API token"
+3. Copie o token gerado
+4. Forneça ao agente quando solicitado
+
+**Armazenamento Seguro:**
+- Token deve ser armazenado em variável de ambiente
+- Nunca commitar token no Git
+- Usar `.env` local ou `scripts/.env` (gitignored)
+
 ### GitHub
 - **Repositório**: https://github.com/LeonardoPioneiraDev/workshop
 - **Branch principal**: main

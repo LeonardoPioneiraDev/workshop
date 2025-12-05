@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar, ReferenceLine, LabelList } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
-
+import logo from '../../../assets/logo.png';
 // Component for a custom tooltip in the chart
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -71,7 +71,7 @@ export default function DepesAfastadosSlide() {
   }, [rows]);
 
   const tableRows = useMemo(() => {
-    return [...chartData].reverse().map(d => [d.name, String(d.inss), String(d.apInvalidez), String(d['Realizado'])]);
+    return chartData.map(d => [d.name, String(d.inss), String(d.apInvalidez), String(d['Realizado'])]);
   }, [chartData]);
 
 
@@ -84,7 +84,12 @@ export default function DepesAfastadosSlide() {
           size="icon"
           className="absolute left-0 top-1/2 -translate-y-1/2 bg-transparent border-slate-600 hover:bg-slate-700"
         >
-          <ChevronLeft className="h-6 w-6 text-slate-300" />
+          <img
+            src={logo}
+            alt="Pioneira Logo"
+            className="h-8 sm:h-12 md:h-16 w-auto object-contain"
+          />
+
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-amber-400 tracking-wider">PIONEIRA</h1>

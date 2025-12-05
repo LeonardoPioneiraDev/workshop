@@ -7,7 +7,7 @@ import { DeptPessoalService } from './dept-pessoal.service';
 @UseGuards(JwtAuthGuard)
 @Controller('dept-pessoal')
 export class DeptPessoalController {
-  constructor(private readonly service: DeptPessoalService) {}
+  constructor(private readonly service: DeptPessoalService) { }
 
   @Get('sync')
   @ApiOperation({ summary: 'Sincronizar Departamento Pessoal (4 referências)' })
@@ -52,5 +52,14 @@ export class DeptPessoalController {
     await this.service.ensureSnapshots(doForce);
     await this.service.ensureAfastadosResumo(doForce);
     return this.service.getAfastadosWindow();
+  }
+
+  @Get('ativos-categoria')
+  @ApiOperation({ summary: 'Funcionários ativos agregados por categoria (Tráfego, Manutenção, Administração, Jovem Aprendiz)' })
+  @ApiResponse({ status: 200, description: 'Ativos por categoria retornado com sucesso' })
+  async ativosPorCategoria(@Query('force') force?: string) {
+    const doForce = (force || '').toLowerCase() === 'true';
+    await this.service.ensureSnapshots(doForce);
+    return this.service.getAtivosPorCategoria();
   }
 }

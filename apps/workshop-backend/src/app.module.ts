@@ -74,9 +74,9 @@ import { LoginLogsController } from './users/controllers/login-logs.controller';
           ssl: false,
           extra: {
             max: 20,
-            connectionTimeoutMillis: 30000,
-            query_timeout: 30000,
-            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 900000,
+            query_timeout: 900000,
+            idleTimeoutMillis: 900000,
           },
         };
 

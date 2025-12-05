@@ -18,31 +18,24 @@ export class DeptPessoalService {
       F.CODFUNC AS CRACHA,
       F.CHAPAFUNC AS CHAPA,
       F.NOMEFUNC AS NOME,
-      NULL AS MAE,
-      (SELECT D.NRDOCTO FROM FLP_DOCUMENTOS D 
-        WHERE D.CODINTFUNC = F.CODINTFUNC AND D.TIPODOCTO = 'CPF') AS CPF,
+      MAE_DEP.NOMEDEPEN AS MAE,
+      CPF_DOC.NRDOCTO AS CPF,
       F.DESCFUNCAO AS FUNCAO,
-      CASE 
-        WHEN F.CODIGOEMPRESA = 4 THEN 'OPERACAO'
-        ELSE 'ADMINISTRATIVO'
-      END AS DEPARTAMENTO,
-      CASE 
-        WHEN F.CODIGOEMPRESA = 4 THEN 'TRANSPORTE'
-        ELSE 'GESTAO'
-      END AS AREA,
+      COALESCE(F.DESCDEPTO, 'SEM DEPARTAMENTO') AS DEPARTAMENTO,
+      COALESCE(F.DESCAREA, 'SEM AREA') AS AREA,
       NULL AS DESCSECAO,
       NULL AS DESCSETOR,
       NULL AS ENDERECO,
       NULL AS CASA,
       NULL AS BAIRRO,
-      COALESCE(C.DESCCID, 'BRASILIA') AS CIDADE,
+      'BRASILIA' AS CIDADE,
       NULL AS FONEFUNC,
       NULL AS FONE2FUNC,
       F.DTADMFUNC AS ADMISSAO,
       F.SITUACAOFUNC AS SITUACAO,
-      0 AS SALBASE,
-      0 AS SALAUX1,
-      0 AS SALAUX2,
+      COALESCE(SAL.BASESALARIAL, 0) AS SALBASE,
+      COALESCE(SAL.TOTALPROV, 0) AS SALAUX1,
+      COALESCE(SAL.TOTALLIQ, 0) AS SALAUX2,
       NULL AS DTCOMPETQUITA,
       NULL AS IDQUITA,
       A.DTAFAST AS DTDESLIGQUITA,
@@ -60,13 +53,61 @@ export class DeptPessoalService {
         WHEN F.DTADMFUNC IS NOT NULL THEN 
           TRUNC(MONTHS_BETWEEN(CAST(:ref_date AS DATE), F.DTADMFUNC) / 12, 2)
         ELSE NULL
-      END AS TEMPO_EMPRESA_ANOS
+      END AS TEMPO_EMPRESA_ANOS,
+      A.DTAFAST AS DATA_AFASTAMENTO,
+      A.CODCID AS CID_MEDICO,
+      CID.DESCCID AS DESCRICAO_CID
     FROM VW_FUNCIONARIOS F
-    LEFT JOIN FLP_AFASTADOS A ON F.CODINTFUNC = A.CODINTFUNC
-    LEFT JOIN FRQ_CID C ON A.CODCID = C.CODCID
+      LEFT JOIN (
+        SELECT CODINTFUNC, MIN(NRDOCTO) AS NRDOCTO
+        FROM FLP_DOCUMENTOS 
+        WHERE TIPODOCTO = 'CPF'
+        GROUP BY CODINTFUNC
+      ) CPF_DOC ON F.CODINTFUNC = CPF_DOC.CODINTFUNC
+      LEFT JOIN (
+        SELECT CODINTFUNC, MIN(NOMEDEPEN) AS NOMEDEPEN
+        FROM FLP_DEPENDENTES 
+        WHERE CODPAREN = 10
+        GROUP BY CODINTFUNC
+      ) MAE_DEP ON F.CODINTFUNC = MAE_DEP.CODINTFUNC
+      LEFT JOIN (
+        SELECT CODINTFUNC, DTAFAST, CODCID,
+               ROW_NUMBER() OVER (PARTITION BY CODINTFUNC ORDER BY DTAFAST DESC) AS RN
+        FROM FLP_AFASTADOS
+      ) A ON F.CODINTFUNC = A.CODINTFUNC AND A.RN = 1
+      LEFT JOIN FRQ_CID CID ON A.CODCID = CID.CODCID
+      LEFT JOIN (
+        SELECT 
+          F_SAL.CODINTFUNC,
+          SUM(CASE WHEN E_SAL.TIPOEVEN = 'B' AND E_SAL.CODEVENTO = 300 THEN FE_SAL.VALORFICHA ELSE 0 END) AS BASESALARIAL,
+          SUM(CASE WHEN E_SAL.TIPOEVEN = 'B' AND E_SAL.CODEVENTO = 318 THEN FE_SAL.VALORFICHA ELSE 0 END) AS TOTALPROV,
+          SUM(CASE WHEN E_SAL.TIPOEVEN = 'B' AND E_SAL.CODEVENTO IN (500, 502) THEN FE_SAL.VALORFICHA ELSE 0 END) AS TOTALLIQ
+        FROM VW_FUNCIONARIOS F_SAL
+          INNER JOIN FLP_FICHAEVENTOS FE_SAL ON F_SAL.CODINTFUNC = FE_SAL.CODINTFUNC
+          INNER JOIN FLP_EVENTOS E_SAL ON FE_SAL.CODEVENTO = E_SAL.CODEVENTO
+          INNER JOIN (
+            SELECT CODIGOEMPRESA, CODIGOFL, TIPOFOLHA, MAX(COMPETENCIA) AS ULTIMA_COMPETENCIA
+            FROM FLP_ENCERRAMENTOFICHAFIN
+            WHERE CODIGOEMPRESA = 4
+              AND CODIGOFL IN (1, 5, 6, 17, 19)
+              AND TIPOFOLHA IN (1, 5)
+            GROUP BY CODIGOEMPRESA, CODIGOFL, TIPOFOLHA
+          ) C_SAL ON (
+            FE_SAL.TIPOFOLHA = C_SAL.TIPOFOLHA 
+            AND F_SAL.CODIGOEMPRESA = C_SAL.CODIGOEMPRESA 
+            AND F_SAL.CODIGOFL = C_SAL.CODIGOFL 
+            AND FE_SAL.COMPETFICHA = C_SAL.ULTIMA_COMPETENCIA
+          )
+        WHERE FE_SAL.TIPOFOLHA IN (1, 5)
+          AND F_SAL.CODIGOEMPRESA = 4
+          AND F_SAL.CODIGOFL IN (1, 5, 6, 17, 19)
+          AND E_SAL.TIPOEVEN = 'B'
+          AND E_SAL.CODEVENTO IN (300, 318, 500, 502)
+        GROUP BY F_SAL.CODINTFUNC
+      ) SAL ON F.CODINTFUNC = SAL.CODINTFUNC
     WHERE F.CODIGOEMPRESA = 4
       AND F.SITUACAOFUNC IN ('A', 'F', 'D')
-    ORDER BY F.NOMEFUNC`;
+    ORDER BY F.DESCDEPTO ASC, F.NOMEFUNC ASC`;
 
   private readonly oracleAfastadosSql = `
     SELECT G.CODIGOEMPRESA,
@@ -149,7 +190,7 @@ export class DeptPessoalService {
     private readonly snapshotRepo: Repository<DeptPessoalSnapshot>,
     private readonly dataSource: DataSource,
     private readonly oracleService: OracleReadOnlyService,
-  ) {}
+  ) { }
 
   private firstDay(date: Date): Date {
     return new Date(date.getFullYear(), date.getMonth(), 1);
@@ -205,6 +246,9 @@ export class DeptPessoalService {
       row.BAIRRO ?? null,
       row.FONEFUNC ?? null,
       row.FONE2FUNC ?? null,
+      row.DATA_AFASTAMENTO ?? null,
+      row.CID_MEDICO ?? null,
+      row.DESCRICAO_CID ?? null,
     ];
   }
 
@@ -245,6 +289,9 @@ export class DeptPessoalService {
         '$30::text',
         '$31::text',
         '$32::text',
+        '$33::date',
+        '$34::text',
+        '$35::text',
       ].join(', ') +
       ')';
     for (const r of rows) {
@@ -305,28 +352,68 @@ export class DeptPessoalService {
     return res;
   }
 
-  async getTurnoverWindow(): Promise<{ rows: Array<{ referencia_date: string; admitidos: number; desligados: number }>; lastSync: string | null }> {
+  async getAtivosPorCategoria(): Promise<{ rows: any[]; medias: any[]; lastSync: string | null }> {
     const [m0, m1, m2, m12] = this.referenceDates();
-    const counts: any[] = await this.dataSource.query(
-      'SELECT referencia_date, situacao, SUM(total) AS total FROM workshop.vw_dept_pessoal_resumo_mes WHERE referencia_date IN ($1,$2,$3,$4) GROUP BY referencia_date, situacao',
+    const rows = await this.dataSource.query(
+      'SELECT referencia_date, categoria, total FROM workshop.vw_dept_pessoal_ativos_por_categoria WHERE referencia_date IN ($1,$2,$3,$4) ORDER BY referencia_date DESC, categoria',
       [m0, m1, m2, m12],
     );
-    const map = new Map<string, { A: number; D: number; F: number }>();
-    for (const r of counts) {
-      const key = new Date(r.referencia_date).toISOString().substring(0, 10);
-      if (!map.has(key)) map.set(key, { A: 0, D: 0, F: 0 });
-      const entry = map.get(key)!;
-      if (r.situacao === 'A') entry.A = Number(r.total) || 0;
-      else if (r.situacao === 'D') entry.D = Number(r.total) || 0;
-      else if (r.situacao === 'F') entry.F = Number(r.total) || 0;
-    }
-    const order = [m2, m1, m0, m12].map((d) => d.toISOString().substring(0, 10));
-    const rows = order.map((k) => {
-      const e = map.get(k) || { A: 0, D: 0, F: 0 };
-      return { referencia_date: k, admitidos: e.A, desligados: e.D };
-    });
+
+    // Calcular média do ano atual (m0, m1, m2)
+    const anoAtual = new Date(m0).getFullYear();
+    const mediasQuery = await this.dataSource.query(
+      `SELECT 
+        categoria, 
+        ROUND(AVG(total)) as media
+      FROM workshop.vw_dept_pessoal_ativos_por_categoria 
+      WHERE EXTRACT(YEAR FROM referencia_date) = $1
+      GROUP BY categoria`,
+      [anoAtual],
+    );
+
     const lastSyncRow = await this.dataSource.query(
-      "SELECT to_char(MAX(ran_at AT TIME ZONE 'UTC') AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD"+"T"+"HH24:MI:SS') AS ts FROM workshop.sync_runs WHERE dataset_key = 'dept_pessoal'",
+      "SELECT to_char(MAX(ran_at AT TIME ZONE 'UTC') AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD" + "T" + "HH24:MI:SS') AS ts FROM workshop.sync_runs WHERE dataset_key = 'dept_pessoal'",
+    );
+    const lastSync = lastSyncRow?.[0]?.ts || null;
+    return { rows, medias: mediasQuery, lastSync };
+  }
+
+  async getTurnoverWindow(): Promise<{ rows: Array<{ referencia_date: string; admitidos: number; desligados: number }>; lastSync: string | null }> {
+    const [m0, m1, m2, m12] = this.referenceDates();
+
+    // Helper para contar eventos em um intervalo usando o snapshot atual (m0)
+    // Assumimos que o snapshot m0 contém todo o histórico de funcionários (ativos e desligados)
+    const countEvents = async (startDate: Date, endDate: Date) => {
+      const result = await this.dataSource.query(
+        `SELECT 
+           COUNT(CASE WHEN admissao >= $2 AND admissao < $3 THEN 1 END) as admitidos,
+           COUNT(CASE WHEN dtdesligquita >= $2 AND dtdesligquita < $3 THEN 1 END) as desligados
+         FROM workshop.dept_pessoal_snapshot 
+         WHERE referencia_date = $1`,
+        [m0, startDate, endDate]
+      );
+      return {
+        admitidos: Number(result[0].admitidos) || 0,
+        desligados: Number(result[0].desligados) || 0
+      };
+    };
+
+    // Ordem: Antigo -> Novo (m12, m2, m1, m0) para manter consistência com outros slides
+    const periods = [m12, m2, m1, m0];
+    const rows = [];
+
+    for (const start of periods) {
+      const end = addMonths(start, 1);
+      const counts = await countEvents(start, end);
+      rows.push({
+        referencia_date: start.toISOString().substring(0, 10),
+        admitidos: counts.admitidos,
+        desligados: counts.desligados
+      });
+    }
+
+    const lastSyncRow = await this.dataSource.query(
+      "SELECT to_char(MAX(ran_at AT TIME ZONE 'UTC') AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD" + "T" + "HH24:MI:SS') AS ts FROM workshop.sync_runs WHERE dataset_key = 'dept_pessoal'",
     );
     const lastSync = lastSyncRow?.[0]?.ts || null;
     return { rows, lastSync };
@@ -348,10 +435,10 @@ export class DeptPessoalService {
       }
       const rows = order.map((k) => {
         const e = map.get(k) || { inss: 0, ap_invalidez: 0, total: 0 };
-        return { referencia_date: k, inss: Number(e.inss)||0, apInvalidez: Number(e.ap_invalidez)||0, total: Number(e.total)||0 };
+        return { referencia_date: k, inss: Number(e.inss) || 0, apInvalidez: Number(e.ap_invalidez) || 0, total: Number(e.total) || 0 };
       });
       const lastSyncRow = await this.dataSource.query(
-        "SELECT to_char(MAX(ran_at AT TIME ZONE 'UTC') AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD"+"T"+"HH24:MI:SS') AS ts FROM workshop.sync_runs WHERE dataset_key IN ('dept_pessoal','dept_pessoal_afastados')",
+        "SELECT to_char(MAX(ran_at AT TIME ZONE 'UTC') AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD" + "T" + "HH24:MI:SS') AS ts FROM workshop.sync_runs WHERE dataset_key IN ('dept_pessoal','dept_pessoal_afastados')",
       );
       const lastSync = lastSyncRow?.[0]?.ts || null;
       return { rows, lastSync };
@@ -366,10 +453,10 @@ export class DeptPessoalService {
         const key = new Date(r.referencia_date).toISOString().substring(0, 10);
         map.set(key, Number(r.total) || 0);
       }
-    const order = [m2, m1, m0, m12].map((d) => d.toISOString().substring(0, 10));
+      const order = [m2, m1, m0, m12].map((d) => d.toISOString().substring(0, 10));
       const rows = order.map((k) => ({ referencia_date: k, inss: null, apInvalidez: null, total: map.get(k) || 0 }));
       const lastSyncRow = await this.dataSource.query(
-        "SELECT to_char(MAX(ran_at AT TIME ZONE 'UTC') AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD"+"T"+"HH24:MI:SS') AS ts FROM workshop.sync_runs WHERE dataset_key = 'dept_pessoal'",
+        "SELECT to_char(MAX(ran_at AT TIME ZONE 'UTC') AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD" + "T" + "HH24:MI:SS') AS ts FROM workshop.sync_runs WHERE dataset_key = 'dept_pessoal'",
       );
       const lastSync = lastSyncRow?.[0]?.ts || null;
       return { rows, lastSync };

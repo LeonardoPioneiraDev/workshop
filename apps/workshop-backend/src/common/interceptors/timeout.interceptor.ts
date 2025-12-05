@@ -8,7 +8,7 @@ export class TimeoutInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     // Definir timeout global para todas as rotas (30 segundos)
     return next.handle().pipe(
-      timeout(30000),
+      timeout(900000),
       catchError(err => {
         if (err.name === 'TimeoutError') {
           return throwError(() => new RequestTimeoutException(
