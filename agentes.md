@@ -98,6 +98,89 @@ Adicionar cores condicionais no gráfico de afastados:
 **Estimativa:** 2h
 ```
 
+### Estimativas de Prazos e Datas
+
+**⚠️ IMPORTANTE: Toda issue DEVE incluir estimativa, start date e due date!**
+
+#### Jornada de Trabalho
+- **Horário**: 8h/dia (08:00 - 17:00 com 1h de almoço)
+- **Dias úteis**: Segunda a Sexta
+- **Feriados**: Considerar calendário brasileiro
+
+#### Tabela de Complexidade e Estimativas
+
+| Complexidade | Horas | Dias Úteis | Tipo de Tarefa | Exemplo |
+|--------------|-------|------------|----------------|---------|
+| **Trivial** | 1-2h | 0.25 dia | Ajustes simples, correções de texto | Alterar cor de botão, corrigir typo |
+| **Pequena** | 2-4h | 0.5 dia | Componente simples, ajuste de layout | Criar card, ajustar responsividade |
+| **Média** | 4-8h | 1 dia | Feature simples, refatoração | Implementar filtro, ajustar múltiplos slides |
+| **Grande** | 1-2 dias | 1-2 dias | Feature complexa, integração | Dashboard completo, integração API |
+| **Muito Grande** | 3-5 dias | 3-5 dias | Sistema completo, múltiplas features | Módulo inteiro, migração de banco |
+
+#### Cálculo Automático de Datas
+
+**Regras:**
+1. **Start Date**: Data atual (quando a issue é criada) ou próximo dia útil
+2. **Due Date**: Start Date + dias úteis estimados
+3. **Pular fins de semana**: Sábado e domingo não contam
+4. **Considerar feriados**: Adicionar dias extras se houver feriados
+
+**Exemplos de Cálculo:**
+
+```python
+# Exemplo 1: Tarefa de 1 dia criada na segunda-feira
+Start Date: 05/12/2024 (Segunda)
+Estimativa: 1 dia (8h)
+Due Date: 05/12/2024 (Segunda) - mesma data
+
+# Exemplo 2: Tarefa de 2 dias criada na quinta-feira
+Start Date: 05/12/2024 (Quinta)
+Estimativa: 2 dias (16h)
+Due Date: 06/12/2024 (Sexta) - pula fim de semana se necessário
+
+# Exemplo 3: Tarefa de 3 dias criada na sexta-feira
+Start Date: 06/12/2024 (Sexta)
+Estimativa: 3 dias (24h)
+Due Date: 10/12/2024 (Terça) - pula sábado e domingo
+```
+
+#### Formato no Jira
+
+Ao criar issue, incluir:
+
+```python
+"duedate": "2024-12-10",  # Formato: YYYY-MM-DD
+"customfield_10015": "2024-12-05",  # Start Date (se disponível)
+```
+
+#### Guia Rápido de Estimativa
+
+**Pergunte-se:**
+1. Quantos arquivos serão modificados? (1-2 = Pequena, 3-5 = Média, 6+ = Grande)
+2. Precisa de pesquisa/aprendizado? (+50% tempo)
+3. Precisa de testes complexos? (+25% tempo)
+4. Tem dependências externas? (+50% tempo)
+5. É código crítico que precisa revisão extra? (+25% tempo)
+
+**Fórmula:**
+```
+Tempo Base × (1 + % Pesquisa + % Testes + % Dependências + % Revisão)
+```
+
+**Exemplo:**
+```
+Tarefa: Implementar gráfico com cores condicionais
+- Arquivos: 1 (DepesAfastadosSlide.tsx)
+- Pesquisa: Não (já conhece Recharts)
+- Testes: Sim, simples (+25%)
+- Dependências: Não
+- Revisão: Não
+
+Tempo Base: 2h
+Tempo Total: 2h × 1.25 = 2.5h ≈ 3h (arredondar para cima)
+Estimativa: 0.5 dia (4h)
+```
+
 ---
 
 ## 💻 Boas Práticas de Programação
@@ -432,32 +515,83 @@ Quando o usuário pedir:
 
 1. **Use o script Python** `scripts/create-jira-issue.py`
 2. **Edite o script** com os dados da nova issue
-3. **Execute o script** para criar automaticamente no Jira
-4. **Status padrão:** A issue será criada com status "A Fazer" (To Do)
-5. **Confirme a criação** mostrando a URL da issue criada
+3. **Calcule as datas automaticamente:**
+   - **Start Date**: Data atual (ou próximo dia útil se for fim de semana)
+   - **Due Date**: Start Date + dias úteis estimados (pulando fins de semana)
+4. **Execute o script** para criar automaticamente no Jira
+5. **Status padrão:** A issue será criada com status "A Fazer" (To Do)
+6. **Confirme a criação** mostrando:
+   - URL da issue (ex: WV-25)
+   - Estimativa (ex: 1 dia / 8h)
+   - Start Date (ex: 05/12/2024)
+   - Due Date (ex: 05/12/2024)
 
 **Formato do script:**
 ```python
+from datetime import datetime, timedelta
+
+def calcular_due_date(start_date, dias_uteis):
+    """Calcula due date pulando fins de semana"""
+    current = start_date
+    dias_adicionados = 0
+    
+    while dias_adicionados < dias_uteis:
+        current += timedelta(days=1)
+        # Pula fins de semana (5=Sábado, 6=Domingo)
+        if current.weekday() < 5:
+            dias_adicionados += 1
+    
+    return current
+
+# Data atual ou próximo dia útil
+hoje = datetime.now()
+if hoje.weekday() >= 5:  # Se for fim de semana
+    dias_ate_segunda = 7 - hoje.weekday()
+    start_date = hoje + timedelta(days=dias_ate_segunda)
+else:
+    start_date = hoje
+
+# Calcular due date baseado na estimativa
+estimativa_dias = 1  # Ajustar conforme complexidade
+due_date = calcular_due_date(start_date, estimativa_dias)
+
 issue_data = {
     "fields": {
         "project": {"key": "WV"},
         "summary": "[Tipo] Título da issue",
-        "description": { ... },  # Formato ADF (Atlassian Document Format)
+        "description": { ... },
         "issuetype": {"name": "Task"},
-        "labels": ["frontend", "backend", "bug", "feature"]
+        "labels": ["frontend", "backend", "bug", "feature"],
+        "duedate": due_date.strftime("%Y-%m-%d"),  # OBRIGATÓRIO
+        # "customfield_10015": start_date.strftime("%Y-%m-%d"),  # Start Date (se disponível)
     }
 }
 ```
+
+**Tabela de Estimativas (use como referência):**
+| Complexidade | Horas | Dias | Exemplo |
+|--------------|-------|------|---------|
+| Trivial | 1-2h | 0.25 | Ajuste de cor, typo |
+| Pequena | 2-4h | 0.5 | Card simples, layout |
+| Média | 4-8h | 1 | Feature simples, filtro |
+| Grande | 1-2 dias | 1-2 | Dashboard, integração |
+| Muito Grande | 3-5 dias | 3-5 | Módulo completo |
 
 **NÃO faça:**
 - ❌ Apenas gerar o conteúdo da issue sem criar
 - ❌ Pedir para o usuário criar manualmente
 - ❌ Criar arquivo markdown sem executar o script
+- ❌ Esquecer de calcular e incluir as datas
+- ❌ Incluir fins de semana no cálculo de prazo
 
 **SEMPRE faça:**
 - ✅ Criar diretamente no Jira via script
-- ✅ Confirmar com a URL da issue (ex: WV-25)
+- ✅ Calcular start date e due date automaticamente
+- ✅ Pular fins de semana no cálculo
+- ✅ Confirmar com URL, estimativa e datas
 - ✅ Usar template completo com todos os campos
+- ✅ Informar claramente: "Issue WV-X criada! Estimativa: X dias. Prazo: DD/MM/YYYY"
+
 
 ### "Implemente..."
 1. Siga as boas práticas deste documento
