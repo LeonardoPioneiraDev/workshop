@@ -426,11 +426,38 @@ git push origin WV-X-descricao
 
 Quando o usuário pedir:
 
-### "Crie uma issue para..."
-1. Use o template de issue acima
-2. Preencha todos os campos
-3. Sugira labels e prioridade
-4. Inclua critérios de aceitação claros
+### "Crie uma issue para..." ou "Crie um quadro no Jira para..."
+
+**⚠️ IMPORTANTE: SEMPRE CRIAR DIRETAMENTE NO JIRA!**
+
+1. **Use o script Python** `scripts/create-jira-issue.py`
+2. **Edite o script** com os dados da nova issue
+3. **Execute o script** para criar automaticamente no Jira
+4. **Status padrão:** A issue será criada com status "A Fazer" (To Do)
+5. **Confirme a criação** mostrando a URL da issue criada
+
+**Formato do script:**
+```python
+issue_data = {
+    "fields": {
+        "project": {"key": "WV"},
+        "summary": "[Tipo] Título da issue",
+        "description": { ... },  # Formato ADF (Atlassian Document Format)
+        "issuetype": {"name": "Task"},
+        "labels": ["frontend", "backend", "bug", "feature"]
+    }
+}
+```
+
+**NÃO faça:**
+- ❌ Apenas gerar o conteúdo da issue sem criar
+- ❌ Pedir para o usuário criar manualmente
+- ❌ Criar arquivo markdown sem executar o script
+
+**SEMPRE faça:**
+- ✅ Criar diretamente no Jira via script
+- ✅ Confirmar com a URL da issue (ex: WV-25)
+- ✅ Usar template completo com todos os campos
 
 ### "Implemente..."
 1. Siga as boas práticas deste documento
